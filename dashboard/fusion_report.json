@@ -1,0 +1,168 @@
+{
+  "generated_at": "2026-06-16T02:32:58.255980",
+  "fusion_type": "Track A + Track B 双轨融合",
+  "rankings": [
+    {
+      "code": "588000",
+      "name": "科创50ETF",
+      "score_b": 75.3,
+      "chg_pct": 5.01,
+      "price": 1.85,
+      "factors": {
+        "momentum": 85,
+        "mean_reversion": 52,
+        "volatility": 60,
+        "fund_flow": 75,
+        "microstructure": 95,
+        "regime": 70
+      },
+      "rank_b": 1,
+      "score_fused": 101.7,
+      "adj_liq": 7.5,
+      "adj_reb": 18.8,
+      "rank_fused": 1
+    },
+    {
+      "code": "515880",
+      "name": "通信ETF",
+      "score_b": 72.9,
+      "chg_pct": 6.63,
+      "price": 3.45,
+      "factors": {
+        "momentum": 92,
+        "mean_reversion": 45,
+        "volatility": 65,
+        "fund_flow": 88,
+        "microstructure": 20,
+        "regime": 70
+      },
+      "rank_b": 2,
+      "score_fused": 80.2,
+      "adj_liq": 7.3,
+      "adj_reb": 0,
+      "rank_fused": 2
+    },
+    {
+      "code": "560780",
+      "name": "半导体设备ETF",
+      "score_b": 68.0,
+      "chg_pct": 4.75,
+      "price": 3.1,
+      "factors": {
+        "momentum": 88,
+        "mean_reversion": 48,
+        "volatility": 70,
+        "fund_flow": 72,
+        "microstructure": 15,
+        "regime": 70
+      },
+      "rank_b": 3,
+      "score_fused": 74.8,
+      "adj_liq": 6.8,
+      "adj_reb": 0,
+      "rank_fused": 3
+    },
+    {
+      "code": "562500",
+      "name": "机器人ETF",
+      "score_b": 49.5,
+      "chg_pct": 3.13,
+      "price": 0.92,
+      "factors": {
+        "momentum": 55,
+        "mean_reversion": 60,
+        "volatility": 55,
+        "fund_flow": 45,
+        "microstructure": 10,
+        "regime": 70
+      },
+      "rank_b": 4,
+      "score_fused": 54.5,
+      "adj_liq": 5.0,
+      "adj_reb": 0,
+      "rank_fused": 4
+    },
+    {
+      "code": "516160",
+      "name": "新能源ETF",
+      "score_b": 42.2,
+      "chg_pct": 2.06,
+      "price": 2.3,
+      "factors": {
+        "momentum": 40,
+        "mean_reversion": 70,
+        "volatility": 50,
+        "fund_flow": 35,
+        "microstructure": 5,
+        "regime": 70
+      },
+      "rank_b": 5,
+      "score_fused": 46.4,
+      "adj_liq": 4.2,
+      "adj_reb": 0,
+      "rank_fused": 5
+    },
+    {
+      "code": "516080",
+      "name": "创新药ETF",
+      "score_b": 33.2,
+      "chg_pct": -0.51,
+      "price": 0.57,
+      "factors": {
+        "momentum": 20,
+        "mean_reversion": 80,
+        "volatility": 40,
+        "fund_flow": 25,
+        "microstructure": 5,
+        "regime": 70
+      },
+      "rank_b": 6,
+      "score_fused": 36.5,
+      "adj_liq": 3.3,
+      "adj_reb": 0,
+      "rank_fused": 6
+    }
+  ],
+  "factors": {
+    "L0_liquidity": "🟡 中性偏宽松（置信度70%）",
+    "L4b_events": [
+      {
+        "etf": "科创50ETF",
+        "event": "指数调仓效应已发生（6/12）",
+        "impact": "🟢 强"
+      }
+    ],
+    "market_regime": "🟡 震荡偏多",
+    "fomc_prob": {
+      "dove": 40,
+      "neutral": 35,
+      "hawk": 25
+    }
+  },
+  "advice": [
+    "⚠️ 科创50ETF 涨幅较大(+5.01%)，注意回调",
+    "🟢 FOMC鸽派概率40%，可持仓",
+    "📅 近期有指数调仓事件，相关ETF提前布局"
+  ],
+  "weights": {
+    "track_b": {
+      "momentum": 0.35,
+      "mean_reversion": 0.15,
+      "volatility": 0.1,
+      "fund_flow": 0.25,
+      "microstructure": 0.1,
+      "regime": 0.05
+    },
+    "track_a": {
+      "L0_liquidity": {
+        "宽松": 1.1,
+        "中性": 1.0,
+        "收紧": 0.8
+      },
+      "L4b_rebalance": 1.25,
+      "L1_sector": 1.0,
+      "L4_supply_demand": 1.0,
+      "L5_catalyst": 1.0
+    }
+  }
+}

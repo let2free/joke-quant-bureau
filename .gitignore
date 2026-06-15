@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志文件
+*.log
+logs/
+
+# 敏感配置（API Key等）
+*.key
+*.pem
+*.p12
+config.json
+secrets.yaml
+.env
+
+# 临时文件
+*.tmp
+*.bak
+*.cache
+*.sqlite-journal
+
+# 测试覆盖率
+.coverage
+htmlcov/
+.pytest_cache/
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 项目特定
+data/historical/  # 历史数据不提交（太大）
+dashboard/access.log  # 访问日志不提交
+*.json.bak  # JSON备份文件
+
+# WorkBuddy
+.workbuddy/
+*.wb-state
