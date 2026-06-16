@@ -1,0 +1,104 @@
+{
+  "generated_at": "2026-06-16T17:30:00",
+  "fusion_type": "九章量化局完整流程",
+  "phases_completed": ["Phase 0", "Phase 1", "Phase 2", "Phase 3", "Phase 4", "Phase 5"],
+  "market_state": "震荡偏多",
+  "L0_liquidity": "中性偏宽松",
+  "L4b_impact": "无重大冲击",
+  "rankings": [
+    {
+      "rank": 1,
+      "code": "159995",
+      "name": "芯片ETF",
+      "original_prediction": 3.85,
+      "calibrated_prediction": 2.31,
+      "score_b": 78.9,
+      "score_fused": 82.5,
+      "confidence": "高",
+      "reason": "动量强+资金流入+双轨一致"
+    },
+    {
+      "rank": 2,
+      "code": "515070",
+      "name": "人工智能ETF",
+      "original_prediction": 3.62,
+      "calibrated_prediction": 2.17,
+      "score_b": 75.7,
+      "score_fused": 80.2,
+      "confidence": "高",
+      "reason": "科技主线+政策利好+美股联动"
+    },
+    {
+      "rank": 3,
+      "code": "512660",
+      "name": "军工ETF",
+      "original_prediction": 3.28,
+      "calibrated_prediction": 1.97,
+      "score_b": 73.5,
+      "score_fused": 78.8,
+      "confidence": "高",
+      "reason": "地缘催化+资金流入+估值合理"
+    },
+    {
+      "rank": 4,
+      "code": "515880",
+      "name": "通信ETF",
+      "original_prediction": 2.95,
+      "calibrated_prediction": 1.77,
+      "score_b": 71.2,
+      "score_fused": 76.5,
+      "confidence": "中",
+      "reason": "动量延续"
+    },
+    {
+      "rank": 5,
+      "code": "516160",
+      "name": "新能源ETF",
+      "original_prediction": 2.68,
+      "calibrated_prediction": 1.61,
+      "score_b": 68.8,
+      "score_fused": 74.2,
+      "confidence": "中",
+      "reason": "政策支持+逢低加仓"
+    },
+    {
+      "rank": 6,
+      "code": "512880",
+      "name": "证券ETF",
+      "original_prediction": 2.35,
+      "calibrated_prediction": 1.41,
+      "score_b": 66.5,
+      "score_fused": 72.8,
+      "confidence": "中",
+      "reason": "市场回暖+成交量放大"
+    }
+  ],
+  "sell_signals": [
+    {
+      "code": "516080",
+      "name": "创新药ETF",
+      "prediction": -1.25,
+      "reason": "均值回归失败+资金流出"
+    },
+    {
+      "code": "512010",
+      "name": "医药ETF",
+      "prediction": -0.85,
+      "reason": "行业利空+动量转弱"
+    }
+  ],
+  "weights": {
+    "momentum": 0.35,
+    "fund_flow": 0.25,
+    "mean_reversion": 0.15,
+    "volatility": 0.08,
+    "microstructure": 0.07,
+    "regime": 0.10
+  },
+  "calibration_factor": 0.6,
+  "risk_warnings": [
+    "美联储议息会议（6/17-18）",
+    "芯片ETF涨幅已大，注意回调",
+    "地缘政治风险"
+  ]
+}
