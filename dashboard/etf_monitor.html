@@ -437,25 +437,66 @@
 
 <!-- ETF管理弹窗 -->
 <div class="modal" id="manage-modal">
-  <div class="modal-content">
+  <div class="modal-content" style="width: 800px; max-height: 85vh;">
     <div class="modal-header">
       <h2>⚙️ 管理监测范围</h2>
       <button class="modal-close" onclick="closeManageModal()">×</button>
     </div>
     
+    <!-- 搜索框 -->
     <div class="form-group">
-      <label class="form-label">搜索全市场ETF（共1563只）</label>
+      <label class="form-label">搜索ETF</label>
       <input type="text" class="form-input" id="etf-search" placeholder="输入代码或名称搜索..." oninput="searchETFs()">
-      <div class="search-results" id="search-results"></div>
     </div>
     
-    <div class="form-group">
-      <label class="form-label">当前监测范围</label>
-      <div id="current-watchlist" style="max-height: 300px; overflow-y: auto;"></div>
+    <!-- 分类标签页 -->
+    <div style="display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap;">
+      <button class="filter-btn active" onclick="showCategory('all', this)">全部</button>
+      <button class="filter-btn" onclick="showCategory('index', this)">📊 指数</button>
+      <button class="filter-btn" onclick="showCategory('tech', this)">💻 科技</button>
+      <button class="filter-btn" onclick="showCategory('energy', this)">⚡ 新能源</button>
+      <button class="filter-btn" onclick="showCategory('medical', this)">💊 医药</button>
+      <button class="filter-btn" onclick="showCategory('consumer', this)">🛒 消费</button>
+      <button class="filter-btn" onclick="showCategory('finance', this)">🏦 金融</button>
+      <button class="filter-btn" onclick="showCategory('military', this)">🛡️ 军工</button>
+      <button class="filter-btn" onclick="showCategory('material', this)">🪨 周期</button>
+      <button class="filter-btn" onclick="showCategory('overseas', this)">🌍 海外</button>
+      <button class="filter-btn" onclick="showCategory('commodity', this)">🥇 商品</button>
+      <button class="filter-btn" onclick="showCategory('bond', this)">📜 债券</button>
+      <button class="filter-btn" onclick="showCategory('watchlist', this)">⭐ 已选</button>
     </div>
     
-    <div style="display: flex; gap: 10px; justify-content: flex-end;">
-      <button class="btn btn-secondary" onclick="closeManageModal()">关闭</button>
+    <!-- ETF列表 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+      <!-- 左侧：可选ETF -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <label class="form-label" style="margin: 0;">可选ETF（<span id="available-count">0</span>只）</label>
+          <div style="display: flex; gap: 5px;">
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="selectAll()">全选</button>
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="deselectAll()">全不选</button>
+          </div>
+        </div>
+        <div id="etf-list" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 5px; padding: 10px;">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+      
+      <!-- 右侧：已选ETF -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <label class="form-label" style="margin: 0;">已选ETF（<span id="selected-count">0</span>只）</label>
+          <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="saveWatchlist()">💾 保存</button>
+        </div>
+        <div id="selected-list" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 5px; padding: 10px;">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+      <button class="btn btn-secondary" onclick="closeManageModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveWatchlist(); closeManageModal();">保存并关闭</button>
     </div>
   </div>
 </div>
@@ -915,47 +956,237 @@ async function removeWatchlist(code, category) {
 }
 
 // ETF管理弹窗
+const ETF_CATEGORIES = {
+  index: { name: '指数', icon: '📊', codes: ['510050', '510300', '510500', '159915', '512100', '560010', '588000', '588080'] },
+  tech: { name: '科技', icon: '💻', codes: ['515880', '159995', '515070', '560780', '159740', '515050'] },
+  energy: { name: '新能源', icon: '⚡', codes: ['516160', '515030', '515790', '159611'] },
+  medical: { name: '医药', icon: '💊', codes: ['516080', '512010'] },
+  consumer: { name: '消费', icon: '🛒', codes: ['159928', '515170', '159996', '516110'] },
+  finance: { name: '金融', icon: '🏦', codes: ['512880', '512800'] },
+  military: { name: '军工', icon: '🛡️', codes: ['512660'] },
+  material: { name: '周期', icon: '🪨', codes: ['515210', '515220', '512400', '159870', '159825', '159865'] },
+  overseas: { name: '海外', icon: '🌍', codes: ['513100', '513500', '513050', '513180', '513400', '513880', '513030', '513080', '164824'] },
+  commodity: { name: '商品', icon: '🥇', codes: ['518880', '159934', '163208', '159985', '159981'] },
+  bond: { name: '债券', icon: '📜', codes: ['511010', '511260'] }
+};
+
+// ETF完整列表
+const ETF_LIST = [
+  { code: '510050', name: '上证50ETF', market: '1', category: 'index' },
+  { code: '510300', name: '沪深300ETF', market: '1', category: 'index' },
+  { code: '510500', name: '中证500ETF', market: '1', category: 'index' },
+  { code: '159915', name: '创业板ETF', market: '0', category: 'index' },
+  { code: '512100', name: '中证1000ETF', market: '1', category: 'index' },
+  { code: '560010', name: '中证2000ETF', market: '1', category: 'index' },
+  { code: '588000', name: '科创50ETF', market: '1', category: 'index' },
+  { code: '588080', name: '科创板ETF', market: '1', category: 'index' },
+  { code: '515880', name: '通信ETF', market: '1', category: 'tech' },
+  { code: '159995', name: '芯片ETF', market: '0', category: 'tech' },
+  { code: '515070', name: '人工智能ETF', market: '1', category: 'tech' },
+  { code: '560780', name: '半导体设备ETF', market: '1', category: 'tech' },
+  { code: '159740', name: '科技ETF', market: '0', category: 'tech' },
+  { code: '515050', name: '5GETF', market: '1', category: 'tech' },
+  { code: '516160', name: '新能源ETF', market: '1', category: 'energy' },
+  { code: '515030', name: '新能源车ETF', market: '1', category: 'energy' },
+  { code: '515790', name: '光伏ETF', market: '1', category: 'energy' },
+  { code: '159611', name: '电力ETF', market: '0', category: 'energy' },
+  { code: '516080', name: '创新药ETF', market: '1', category: 'medical' },
+  { code: '512010', name: '医药ETF', market: '1', category: 'medical' },
+  { code: '159928', name: '消费ETF', market: '0', category: 'consumer' },
+  { code: '515170', name: '食品饮料ETF', market: '1', category: 'consumer' },
+  { code: '159996', name: '家电ETF', market: '0', category: 'consumer' },
+  { code: '516110', name: '汽车ETF', market: '1', category: 'consumer' },
+  { code: '512880', name: '证券ETF', market: '1', category: 'finance' },
+  { code: '512800', name: '银行ETF', market: '1', category: 'finance' },
+  { code: '512660', name: '军工ETF', market: '1', category: 'military' },
+  { code: '515210', name: '钢铁ETF', market: '1', category: 'material' },
+  { code: '515220', name: '煤炭ETF', market: '1', category: 'material' },
+  { code: '512400', name: '有色金属ETF', market: '1', category: 'material' },
+  { code: '159870', name: '化工ETF', market: '0', category: 'material' },
+  { code: '159825', name: '农业ETF', market: '0', category: 'material' },
+  { code: '159865', name: '养殖ETF', market: '0', category: 'material' },
+  { code: '513100', name: '纳指科技ETF', market: '1', category: 'overseas' },
+  { code: '513500', name: '标普500ETF', market: '1', category: 'overseas' },
+  { code: '513050', name: '中概互联ETF', market: '1', category: 'overseas' },
+  { code: '513180', name: '恒生科技ETF', market: '1', category: 'overseas' },
+  { code: '513400', name: '道琼斯ETF', market: '1', category: 'overseas' },
+  { code: '513880', name: '日经ETF', market: '1', category: 'overseas' },
+  { code: '513030', name: '德国ETF', market: '1', category: 'overseas' },
+  { code: '513080', name: '法国ETF', market: '1', category: 'overseas' },
+  { code: '164824', name: '印度ETF', market: '0', category: 'overseas' },
+  { code: '518880', name: '黄金ETF', market: '1', category: 'commodity' },
+  { code: '159934', name: '黄金ETF', market: '0', category: 'commodity' },
+  { code: '163208', name: '原油ETF', market: '0', category: 'commodity' },
+  { code: '159985', name: '豆粕ETF', market: '0', category: 'commodity' },
+  { code: '159981', name: '能源化工ETF', market: '0', category: 'commodity' },
+  { code: '511010', name: '国债ETF', market: '1', category: 'bond' },
+  { code: '511260', name: '十年国债ETF', market: '1', category: 'bond' },
+  { code: '562500', name: '机器人ETF', market: '1', category: 'tech' },
+  { code: '512980', name: '传媒ETF', market: '1', category: 'tech' },
+  { code: '516010', name: '游戏ETF', market: '1', category: 'tech' },
+  { code: '159745', name: '建材ETF', market: '0', category: 'material' },
+  { code: '159766', name: '旅游ETF', market: '0', category: 'consumer' },
+  { code: '159920', name: '恒生ETF', market: '0', category: 'overseas' },
+  { code: '159941', name: '纳指ETF', market: '0', category: 'overseas' },
+  { code: '159987', name: '越南ETF', market: '0', category: 'overseas' },
+  { code: '159902', name: '中小板ETF', market: '0', category: 'index' },
+  { code: '512200', name: '房地产ETF', market: '1', category: 'material' }
+];
+
+let selectedETFs = new Set();
+let currentCategory = 'all';
+
 function openManageModal() {
   document.getElementById('manage-modal').classList.add('active');
-  renderCurrentWatchlist();
+  // 初始化已选列表
+  selectedETFs = new Set();
+  watchlistData.a_share.forEach(e => selectedETFs.add(e.code));
+  watchlistData.us.forEach(e => selectedETFs.add(e.code));
+  renderETFList();
+  renderSelectedList();
 }
 
 function closeManageModal() {
   document.getElementById('manage-modal').classList.remove('active');
 }
 
-function renderCurrentWatchlist() {
-  const container = document.getElementById('current-watchlist');
-  const all = [...watchlistData.a_share, ...watchlistData.us];
+function showCategory(category, btn) {
+  currentCategory = category;
+  // 更新按钮状态
+  document.querySelectorAll('#manage-modal .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderETFList();
+}
+
+function renderETFList() {
+  const container = document.getElementById('etf-list');
+  let etfs = ETF_LIST;
   
-  container.innerHTML = all.map(etf => `
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
-      <div>
-        <span style="color: var(--blue); font-family: monospace;">${etf.code}</span>
-        <span style="margin-left: 10px;">${etf.name}</span>
+  // 按分类筛选
+  if (currentCategory === 'watchlist') {
+    etfs = etfs.filter(e => selectedETFs.has(e.code));
+  } else if (currentCategory !== 'all') {
+    etfs = etfs.filter(e => e.category === currentCategory);
+  }
+  
+  // 搜索筛选
+  const keyword = document.getElementById('etf-search').value.toLowerCase();
+  if (keyword) {
+    etfs = etfs.filter(e => e.code.includes(keyword) || e.name.toLowerCase().includes(keyword));
+  }
+  
+  document.getElementById('available-count').textContent = etfs.length;
+  
+  container.innerHTML = etfs.map(etf => {
+    const isSelected = selectedETFs.has(etf.code);
+    return `
+      <div style="display: flex; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border); cursor: pointer;"
+           onclick="toggleETF('${etf.code}', '${etf.name}', '${etf.market}')">
+        <input type="checkbox" ${isSelected ? 'checked' : ''} style="margin-right: 8px;" 
+               onclick="event.stopPropagation(); toggleETF('${etf.code}', '${etf.name}', '${etf.market}')">
+        <span style="color: var(--blue); font-family: monospace; min-width: 60px;">${etf.code}</span>
+        <span style="flex: 1; margin-left: 8px;">${etf.name}</span>
+        <span style="font-size: 0.7rem; color: #6b7b99;">${ETF_CATEGORIES[etf.category]?.name || ''}</span>
       </div>
-      <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" 
-              onclick="removeWatchlist('${etf.code}', 'a_share'); renderCurrentWatchlist();">删除</button>
+    `;
+  }).join('');
+}
+
+function renderSelectedList() {
+  const container = document.getElementById('selected-list');
+  const selected = ETF_LIST.filter(e => selectedETFs.has(e.code));
+  
+  document.getElementById('selected-count').textContent = selected.length;
+  
+  if (selected.length === 0) {
+    container.innerHTML = '<div style="text-align: center; color: #6b7b99; padding: 20px;">请从左侧选择ETF</div>';
+    return;
+  }
+  
+  container.innerHTML = selected.map(etf => `
+    <div style="display: flex; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border);">
+      <span style="color: var(--blue); font-family: monospace; min-width: 60px;">${etf.code}</span>
+      <span style="flex: 1; margin-left: 8px;">${etf.name}</span>
+      <button style="background: var(--up); border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"
+              onclick="removeETF('${etf.code}')">✕</button>
     </div>
   `).join('');
 }
 
-async function searchETFs() {
-  const keyword = document.getElementById('etf-search').value;
-  if (keyword.length < 2) {
-    document.getElementById('search-results').innerHTML = '';
-    return;
+function toggleETF(code, name, market) {
+  if (selectedETFs.has(code)) {
+    selectedETFs.delete(code);
+  } else {
+    selectedETFs.add(code);
   }
+  renderETFList();
+  renderSelectedList();
+}
+
+function removeETF(code) {
+  selectedETFs.delete(code);
+  renderETFList();
+  renderSelectedList();
+}
+
+function selectAll() {
+  let etfs = ETF_LIST;
+  if (currentCategory !== 'all' && currentCategory !== 'watchlist') {
+    etfs = etfs.filter(e => e.category === currentCategory);
+  }
+  etfs.forEach(e => selectedETFs.add(e.code));
+  renderETFList();
+  renderSelectedList();
+}
+
+function deselectAll() {
+  let etfs = ETF_LIST;
+  if (currentCategory !== 'all' && currentCategory !== 'watchlist') {
+    etfs = etfs.filter(e => e.category === currentCategory);
+  }
+  etfs.forEach(e => selectedETFs.delete(e.code));
+  renderETFList();
+  renderSelectedList();
+}
+
+async function saveWatchlist() {
+  const selected = ETF_LIST.filter(e => selectedETFs.has(e.code));
+  const watchlist = {
+    a_share: selected.filter(e => e.market === '1' || e.market === '0').map(e => ({
+      code: e.code, name: e.name, market: e.market
+    })),
+    us: selected.filter(e => e.category === 'overseas').map(e => ({
+      code: e.code, name: e.name, market: e.market
+    }))
+  };
   
   try {
-    const res = await fetch(`/api/etf/search?q=${encodeURIComponent(keyword)}`);
-    const results = await res.json();
-    
-    const container = document.getElementById('search-results');
-    container.innerHTML = results.map(etf => `
-      <div class="search-item">
-        <div>
-          <span class="code">${etf.code}</span>
+    await fetch('/api/etf/watchlist/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ watchlist })
+    });
+    await loadData();
+  } catch (err) {
+    console.error('保存自选失败:', err);
+  }
+}
+
+function searchETFs() {
+  renderETFList();
+}
+
+function getSector(name) {
+  if (name.includes('半导体') || name.includes('芯片') || name.includes('AI') || name.includes('人工智能') || name.includes('科创')) return '科技';
+  if (name.includes('新能源') || name.includes('光伏') || name.includes('锂电') || name.includes('新能车')) return '新能源';
+  if (name.includes('医药') || name.includes('创新药') || name.includes('医疗') || name.includes('生科')) return '医药';
+  if (name.includes('消费') || name.includes('食品') || name.includes('家电') || name.includes('酒')) return '消费';
+  if (name.includes('银行') || name.includes('证券') || name.includes('金融') || name.includes('保险')) return '金融';
+  if (name.includes('军工') || name.includes('国防')) return '军工';
+  if (name.includes('地产') || name.includes('房地产') || name.includes('基建')) return '地产';
+  if (name.includes('纳指') || name.includes('标普') || name.includes('恒生') || name.includes('中概') || name.includes('日经') || name.includes('德国') || name.includes('法国')) return '海外';
+  return '其他';
+}
           <span class="name" style="margin-left: 10px;">${etf.name}</span>
         </div>
         <button class="add-btn" onclick="addWatchlist('${etf.code}', '${etf.name}', '${etf.market}'); renderCurrentWatchlist();">添加</button>
