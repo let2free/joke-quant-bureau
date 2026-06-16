@@ -21,9 +21,9 @@ from data_importer import importer
 
 # 导入ETF数据模块
 from etf_data import (
-    generate_mock_etf_data, calculate_rankings, get_watchlist_data,
+    generate_etf_data, calculate_rankings, get_watchlist_data,
     add_to_watchlist, remove_from_watchlist, get_etf_detail,
-    get_sector_etfs, load_watchlist, get_etf_list_from_tdx
+    get_sector_etfs, load_watchlist, search_etfs
 )
 
 # 配置
@@ -424,7 +424,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             market = params.get('market', 'all')
             sort_by = params.get('sort', 'change_pct')
             top_n = int(params.get('top', '50'))
-            data = generate_mock_etf_data()
+            data = generate_etf_data()
             rankings = calculate_rankings(data, sort_by, top_n)
             self.wfile.write(json.dumps(rankings, ensure_ascii=False).encode("utf-8"))
 
@@ -487,7 +487,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             # 重新生成数据
-            data = generate_mock_etf_data()
+            data = generate_etf_data()
             rankings = calculate_rankings(data, 'change_pct', 100)
             self.wfile.write(json.dumps({
                 "success": True,
@@ -511,12 +511,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                         params[k] = v
             keyword = params.get('q', '')
             # 搜索ETF
-            all_data = generate_mock_etf_data(100)
-            results = []
-            for code, info in all_data.items():
-                if keyword.lower() in code or keyword.lower() in info.get('name', '').lower():
-                    results.append(info)
-            self.wfile.write(json.dumps(results[:20], ensure_ascii=False).encode("utf-8"))
+            results = search_etfs(keyword, 20)
+            self.wfile.write(json.dumps(results, ensure_ascii=False).encode("utf-8"))
 
         # API: 获取监测范围配置
         elif path == "/api/etf/monitor/config":
