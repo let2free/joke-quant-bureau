@@ -529,6 +529,50 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(config, ensure_ascii=False).encode("utf-8"))
 
+        # API: 预测历史
+        elif path == "/api/predictions/history":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            artifacts_dir = DATA_DIR / "artifacts"
+            predictions = []
+            if artifacts_dir.exists():
+                for date_dir in sorted(artifacts_dir.iterdir(), reverse=True):
+                    if date_dir.is_dir():
+                        fusion_file = date_dir / "fusion_report.json"
+                        if fusion_file.exists():
+                            try:
+                                with open(fusion_file, "r", encoding="utf-8") as f:
+                                    data = json.load(f)
+                                    data["date"] = date_dir.name
+                                    predictions.append(data)
+                            except:
+                                pass
+            self.wfile.write(json.dumps(predictions[:10], ensure_ascii=False).encode("utf-8"))
+
+        # API: 最新预测
+        elif path == "/api/predictions/latest":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            artifacts_dir = DATA_DIR / "artifacts"
+            latest = {}
+            if artifacts_dir.exists():
+                for date_dir in sorted(artifacts_dir.iterdir(), reverse=True):
+                    if date_dir.is_dir():
+                        fusion_file = date_dir / "fusion_report.json"
+                        if fusion_file.exists():
+                            try:
+                                with open(fusion_file, "r", encoding="utf-8") as f:
+                                    latest = json.load(f)
+                                    latest["date"] = date_dir.name
+                                    break
+                            except:
+                                pass
+            self.wfile.write(json.dumps(latest, ensure_ascii=False).encode("utf-8"))
+
         # 访问日志
         elif path == "/log":
             self.send_response(200)

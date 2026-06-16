@@ -206,6 +206,16 @@
     </div>
   </div>
   
+  <!-- 风险/消息关联拓扑图 -->
+  <div class="section-title">
+    <span class="icon">⚠️</span> 风险-消息-ETF 关联拓扑
+  </div>
+  <div class="topology-container" style="margin-bottom: 20px;">
+    <svg id="riskTopologySvg" width="100%" height="400" viewBox="0 0 1200 400">
+      <!-- 动态生成 -->
+    </svg>
+  </div>
+  
   <!-- 拓扑关系图 -->
   <div class="section-title">
     <span class="icon">🔗</span> 资金-行业-消息 拓扑关系
@@ -263,6 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderFlowTrendChart();
   renderRotationChart();
   renderSentimentChart();
+  renderRiskTopology();
   renderTopology();
   updateClock();
   setInterval(updateClock, 1000);
@@ -534,6 +545,189 @@ function renderTopology() {
     text.setAttribute('y', 5);
     text.setAttribute('fill', '#6b7b99');
     text.setAttribute('font-size', '12');
+    text.textContent = item.label;
+    legend.appendChild(text);
+  });
+  
+  svg.appendChild(legend);
+}
+
+function renderRiskTopology() {
+  const svg = document.getElementById('riskTopologySvg');
+  const width = 1200, height = 400;
+  
+  // 风险/消息/ETF节点定义
+  const nodes = [
+    // 中心：市场状态
+    { id: 'market', label: '市场状态', x: 600, y: 200, type: 'center', value: '震荡偏多' },
+    
+    // 风险节点（左侧）
+    { id: 'risk_fed', label: '美联储', x: 150, y: 80, type: 'risk', value: '鹰派风险' },
+    { id: 'risk_geo', label: '地缘政治', x: 150, y: 200, type: 'risk', value: '中东局势' },
+    { id: 'risk_industry', label: '行业利空', x: 150, y: 320, type: 'risk', value: '医药集采' },
+    
+    // 消息节点（右侧）
+    { id: 'msg_policy', label: '政策利好', x: 1050, y: 80, type: 'positive', value: '半导体支持' },
+    { id: 'msg_data', label: '数据超预期', x: 1050, y: 200, type: 'positive', value: '新能源销量' },
+    { id: 'msg_fund', label: '资金流入', x: 1050, y: 320, type: 'positive', value: '北向+86亿' },
+    
+    // ETF节点（中间层）
+    { id: 'etf_chip', label: '芯片ETF', x: 400, y: 60, type: 'etf', value: '+2.31%' },
+    { id: 'etf_ai', label: '人工智能ETF', x: 400, y: 140, type: 'etf', value: '+2.17%' },
+    { id: 'etf_military', label: '军工ETF', x: 400, y: 220, type: 'etf', value: '+1.97%' },
+    { id: 'etf_med', label: '医药ETF', x: 400, y: 300, type: 'etf', value: '-0.85%' },
+    { id: 'etf_comm', label: '通信ETF', x: 400, y: 380, type: 'etf', value: '+1.77%' },
+    
+    // 右侧中间层
+    { id: 'etf_nev', label: '新能源ETF', x: 800, y: 60, type: 'etf', value: '+1.61%' },
+    { id: 'etf_sec', label: '证券ETF', x: 800, y: 140, type: 'etf', value: '+1.41%' },
+    { id: 'etf_mil2', label: '军工ETF', x: 800, y: 220, type: 'etf', value: '+1.97%' },
+    { id: 'etf_inno', label: '创新药ETF', x: 800, y: 300, type: 'etf', value: '-1.25%' },
+    { id: 'etf_5g', label: '通信ETF', x: 800, y: 380, type: 'etf', value: '+1.77%' }
+  ];
+  
+  // 关联关系定义
+  const links = [
+    // 风险 → 市场
+    { from: 'risk_fed', to: 'market', type: 'negative' },
+    { from: 'risk_geo', to: 'market', type: 'negative' },
+    { from: 'risk_industry', to: 'market', type: 'negative' },
+    
+    // 消息 → 市场
+    { from: 'msg_policy', to: 'market', type: 'positive' },
+    { from: 'msg_data', to: 'market', type: 'positive' },
+    { from: 'msg_fund', to: 'market', type: 'positive' },
+    
+    // 市场 → ETF
+    { from: 'market', to: 'etf_chip', type: 'positive' },
+    { from: 'market', to: 'etf_ai', type: 'positive' },
+    { from: 'market', to: 'etf_military', type: 'positive' },
+    { from: 'market', to: 'etf_med', type: 'negative' },
+    { from: 'market', to: 'etf_comm', type: 'positive' },
+    { from: 'market', to: 'etf_nev', type: 'positive' },
+    { from: 'market', to: 'etf_sec', type: 'positive' },
+    { from: 'market', to: 'etf_inno', type: 'negative' },
+    
+    // 风险 → ETF（直接影响）
+    { from: 'risk_fed', to: 'etf_sec', type: 'negative' },
+    { from: 'risk_industry', to: 'etf_med', type: 'negative' },
+    { from: 'risk_industry', to: 'etf_inno', type: 'negative' },
+    
+    // 消息 → ETF（直接影响）
+    { from: 'msg_policy', to: 'etf_chip', type: 'positive' },
+    { from: 'msg_policy', to: 'etf_ai', type: 'positive' },
+    { from: 'msg_data', to: 'etf_nev', type: 'positive' },
+    { from: 'msg_fund', to: 'etf_mil2', type: 'positive' }
+  ];
+  
+  // 绘制连线
+  links.forEach(link => {
+    const from = nodes.find(n => n.id === link.from);
+    const to = nodes.find(n => n.id === link.to);
+    if (!from || !to) return;
+    
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.setAttribute('stroke', link.type === 'positive' ? '#00e676' : '#ff4d6a');
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-opacity', '0.6');
+    line.setAttribute('stroke-dasharray', link.type === 'negative' ? '5,5' : 'none');
+    svg.appendChild(line);
+  });
+  
+  // 绘制节点
+  nodes.forEach(node => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    
+    // 节点圆圈
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', node.x);
+    circle.setAttribute('cy', node.y);
+    circle.setAttribute('r', node.type === 'center' ? 35 : 25);
+    
+    // 颜色
+    let fillColor, strokeColor;
+    switch(node.type) {
+      case 'center':
+        fillColor = '#1a3a6a';
+        strokeColor = '#4a6cf5';
+        break;
+      case 'risk':
+        fillColor = '#4a1a1a';
+        strokeColor = '#ff4d6a';
+        break;
+      case 'positive':
+        fillColor = '#1a4a1a';
+        strokeColor = '#00e676';
+        break;
+      case 'etf':
+        fillColor = '#1a1a4a';
+        strokeColor = '#a855f7';
+        break;
+      default:
+        fillColor = '#1a1a4a';
+        strokeColor = '#6b7b99';
+    }
+    
+    circle.setAttribute('fill', fillColor);
+    circle.setAttribute('stroke', strokeColor);
+    circle.setAttribute('stroke-width', '2');
+    g.appendChild(circle);
+    
+    // 节点标签
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', node.x);
+    text.setAttribute('y', node.y - 5);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#e0e6ff');
+    text.setAttribute('font-size', node.type === 'center' ? '12' : '10');
+    text.setAttribute('font-weight', node.type === 'center' ? 'bold' : 'normal');
+    text.textContent = node.label;
+    g.appendChild(text);
+    
+    // 节点值
+    const value = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    value.setAttribute('x', node.x);
+    value.setAttribute('y', node.y + 12);
+    value.setAttribute('text-anchor', 'middle');
+    value.setAttribute('fill', strokeColor);
+    value.setAttribute('font-size', '9');
+    value.textContent = node.value;
+    g.appendChild(value);
+    
+    svg.appendChild(g);
+  });
+  
+  // 添加图例
+  const legend = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  legend.setAttribute('transform', 'translate(50, 380)');
+  
+  const legendItems = [
+    { color: '#4a6cf5', label: '市场状态', dash: false },
+    { color: '#ff4d6a', label: '风险因素', dash: true },
+    { color: '#00e676', label: '利好消息', dash: false },
+    { color: '#a855f7', label: 'ETF产品', dash: false }
+  ];
+  
+  legendItems.forEach((item, i) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', i * 150);
+    line.setAttribute('y1', 0);
+    line.setAttribute('x2', i * 150 + 20);
+    line.setAttribute('y2', 0);
+    line.setAttribute('stroke', item.color);
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-dasharray', item.dash ? '5,5' : 'none');
+    legend.appendChild(line);
+    
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', i * 150 + 25);
+    text.setAttribute('y', 5);
+    text.setAttribute('fill', '#6b7b99');
+    text.setAttribute('font-size', '11');
     text.textContent = item.label;
     legend.appendChild(text);
   });

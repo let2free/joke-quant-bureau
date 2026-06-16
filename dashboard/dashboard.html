@@ -201,7 +201,33 @@
     <div class="advice" id="advice">等待数据...</div>
   </div>
 
-  <!-- ========== Row 5: 自选ETF榜单 ========== -->
+  <!-- ========== Row 5: 预测跟踪 ========== -->
+
+  <div class="card c4">
+    <h2>🎯 九章量化局 · 预测跟踪</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <!-- 最新预测 -->
+      <div>
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📅 最新预测（<span id="pred-date">-</span>）</h3>
+        <table class="flt" id="latest-prediction">
+          <tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>
+        </table>
+      </div>
+      <!-- 预测vs实际 -->
+      <div>
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📊 历史准确率</h3>
+        <div class="chart-wrap" style="height: 200px;"><canvas id="chart-accuracy-trend"></canvas></div>
+      </div>
+    </div>
+    <div style="margin-top: 15px;">
+      <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📋 历史预测记录</h3>
+      <table class="flt" id="prediction-history">
+        <tr><th>日期</th><th>推荐ETF</th><th>预测涨跌</th><th>实际涨跌</th><th>误差</th><th>方向</th></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== Row 6: 自选ETF榜单 ========== -->
 
   <div class="card c4">
     <h2>⭐ 自选ETF榜单</h2>
@@ -673,9 +699,139 @@ setInterval(tickClock, 1000);
 fetchData();
 loadWatchlist();
 loadRankings();
+loadPredictions();
 setInterval(fetchData, 15000);
 setInterval(loadWatchlist, 30000);
 setInterval(loadRankings, 30000);
+setInterval(loadPredictions, 60000);
+
+// ── 加载预测数据 ──
+async function loadPredictions() {
+  try {
+    const [latestRes, historyRes] = await Promise.all([
+      fetch('/api/predictions/latest?t=' + Date.now()),
+      fetch('/api/predictions/history?t=' + Date.now())
+    ]);
+    
+    const latest = await latestRes.json();
+    const history = await historyRes.json();
+    
+    renderLatestPrediction(latest);
+    renderPredictionHistory(history);
+    renderAccuracyTrend(history);
+  } catch(e) {
+    console.error('加载预测数据失败:', e);
+  }
+}
+
+function renderLatestPrediction(data) {
+  if (!data || !data.rankings) return;
+  
+  document.getElementById('pred-date').textContent = data.date || '-';
+  
+  const tbl = document.getElementById('latest-prediction');
+  tbl.innerHTML = '<tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>';
+  
+  data.rankings.forEach((item, i) => {
+    const pred = item.calibrated_prediction || item.calibrated_prediction || 0;
+    const cls = pred >= 0 ? 'up' : 'down';
+    const sign = pred >= 0 ? '+' : '';
+    const confidence = item.confidence || '中';
+    const confColor = confidence === '高' ? 'var(--down)' : confidence === '中' ? 'var(--orange)' : 'var(--up)';
+    
+    tbl.innerHTML += `<tr>
+      <td style="color:var(--blue);font-weight:bold">${i+1}</td>
+      <td>${item.name}</td>
+      <td class="${cls}">${sign}${pred.toFixed(2)}%</td>
+      <td style="color:${confColor}">${confidence}</td>
+      <td style="font-size:0.75rem;color:#6b7b99">${item.reason || '-'}</td>
+    </tr>`;
+  });
+  
+  // 卖出信号
+  if (data.sell_signals && data.sell_signals.length > 0) {
+    tbl.innerHTML += '<tr><td colspan="5" style="color:var(--up);font-weight:bold;padding-top:10px">⚠️ 卖出信号</td></tr>';
+    data.sell_signals.forEach(item => {
+      tbl.innerHTML += `<tr>
+        <td>-</td>
+        <td>${item.name}</td>
+        <td class="down">${item.prediction}%</td>
+        <td style="color:var(--up)">谨慎</td>
+        <td style="font-size:0.75rem;color:#6b7b99">${item.reason}</td>
+      </tr>`;
+    });
+  }
+}
+
+function renderPredictionHistory(history) {
+  if (!history || history.length === 0) return;
+  
+  const tbl = document.getElementById('prediction-history');
+  tbl.innerHTML = '<tr><th>日期</th><th>推荐ETF</th><th>预测涨跌</th><th>实际涨跌</th><th>误差</th><th>方向</th></tr>';
+  
+  history.forEach(pred => {
+    if (!pred.rankings) return;
+    const top1 = pred.rankings[0];
+    if (!top1) return;
+    
+    const predDate = pred.date || '-';
+    const predPct = top1.calibrated_prediction || 0;
+    const actualPct = top1.actual_change || null;
+    const error = actualPct !== null ? Math.abs(predPct - actualPct).toFixed(2) : '-';
+    const direction = actualPct !== null ? 
+      (predPct >= 0 && actualPct >= 0) || (predPct < 0 && actualPct < 0) ? '✅' : '❌' : '-';
+    
+    tbl.innerHTML += `<tr>
+      <td>${predDate}</td>
+      <td>${top1.name}</td>
+      <td class="${predPct >= 0 ? 'up' : 'down'}">${predPct >= 0 ? '+' : ''}${predPct.toFixed(2)}%</td>
+      <td class="${actualPct >= 0 ? 'up' : 'down'}">${actualPct !== null ? (actualPct >= 0 ? '+' : '') + actualPct.toFixed(2) + '%' : '-'}</td>
+      <td>${error !== '-' ? error + '%' : '-'}</td>
+      <td>${direction}</td>
+    </tr>`;
+  });
+}
+
+function renderAccuracyTrend(history) {
+  if (!history || history.length === 0) return;
+  
+  const labels = history.map(h => h.date || '').reverse();
+  const accuracyData = history.map(h => {
+    if (!h.rankings) return 0;
+    const correct = h.rankings.filter(r => {
+      if (r.actual_change === null || r.actual_change === undefined) return false;
+      return (r.calibrated_prediction >= 0 && r.actual_change >= 0) || 
+             (r.calibrated_prediction < 0 && r.actual_change < 0);
+    }).length;
+    return h.rankings.length > 0 ? Math.round(correct / h.rankings.length * 100) : 0;
+  }).reverse();
+  
+  if (window.accuracyTrendChart) window.accuracyTrendChart.destroy();
+  
+  window.accuracyTrendChart = new Chart(document.getElementById('chart-accuracy-trend'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '方向准确率(%)',
+        data: accuracyData,
+        borderColor: '#4a6cf5',
+        backgroundColor: 'rgba(74,108,245,0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7b99', font: { size: 10 } }, grid: { color: '#1e264a' } },
+        y: { min: 0, max: 100, ticks: { color: '#6b7b99', callback: v => v + '%' }, grid: { color: '#1e264a' } }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
