@@ -202,33 +202,72 @@
     <div class="advice" id="advice">等待数据...</div>
   </div>
 
-  <!-- ========== Row 5: 预测跟踪 ========== -->
+  <!-- ========== Row 5: 复盘总结 ========== -->
 
   <div class="card c4">
-    <h2>🎯 九章量化局 · 预测跟踪</h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-      <!-- 最新预测 -->
-      <div>
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📅 最新预测（<span id="pred-date">-</span>）</h3>
-        <table class="flt" id="latest-prediction">
-          <tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>
-        </table>
+    <h2>📝 今日复盘总结（<span id="recap-date">-</span>）</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 15px;">
+      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
+        <div style="font-size:1.6rem; font-weight:bold; color:var(--cyan);" id="recap-direction-acc">-</div>
+        <div style="font-size:0.75rem; color:#6b7b99;">方向准确率</div>
       </div>
-      <!-- 预测vs实际 -->
-      <div>
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📊 历史准确率</h3>
-        <div class="chart-wrap" style="height: 200px;"><canvas id="chart-accuracy-trend"></canvas></div>
+      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
+        <div style="font-size:1.6rem; font-weight:bold; color:var(--orange);" id="recap-avg-error">-</div>
+        <div style="font-size:0.75rem; color:#6b7b99;">平均误差</div>
+      </div>
+      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
+        <div style="font-size:1.6rem; font-weight:bold; color:var(--down);" id="recap-best">-</div>
+        <div style="font-size:0.75rem; color:#6b7b99;">最准预测</div>
+      </div>
+      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
+        <div style="font-size:1.6rem; font-weight:bold; color:var(--up);" id="recap-worst">-</div>
+        <div style="font-size:0.75rem; color:#6b7b99;">最偏预测</div>
       </div>
     </div>
-    <div style="margin-top: 15px;">
-      <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📋 历史预测记录</h3>
-      <table class="flt" id="prediction-history">
-        <tr><th>日期</th><th>推荐ETF</th><th>预测涨跌</th><th>实际涨跌</th><th>误差</th><th>方向</th></tr>
-      </table>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+      <div>
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 8px;">✅ 预测 vs 实际对比</h3>
+        <table class="flt" id="recap-comparison">
+          <tr><th>ETF</th><th>预测</th><th>实际</th><th>误差</th><th>方向</th></tr>
+        </table>
+      </div>
+      <div>
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 8px;">📊 历史准确率趋势</h3>
+        <div class="chart-wrap" style="height: 220px;"><canvas id="chart-accuracy-trend"></canvas></div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <a href="jiuzhang.html" style="color: var(--cyan); font-size: 0.8rem; text-decoration: none;">🧮 查看完整测算中心 →</a>
     </div>
   </div>
 
-  <!-- ========== Row 6: 自选ETF榜单 ========== -->
+  <!-- ========== Row 6: 预测跟踪 ========== -->
+
+  <div class="card c4">
+    <h2>🎯 次日预测（<span id="pred-date">-</span>）</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <!-- 最新预测 -->
+      <div>
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📋 推荐买入</h3>
+        <table class="flt" id="latest-prediction">
+          <tr><th>#</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>
+        </table>
+      </div>
+      <!-- 卖出信号 -->
+      <div>
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">⚠️ 卖出信号</h3>
+        <table class="flt" id="sell-signals">
+          <tr><th>ETF</th><th>预测涨跌</th><th>风险提示</th></tr>
+        </table>
+        <div style="margin-top: 15px;">
+          <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 8px;">⚠️ 风险提示</h3>
+          <div id="risk-warnings" style="font-size: 0.85rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Row 7: 自选ETF榜单 ========== -->
 
   <div class="card c4">
     <h2>⭐ 自选ETF榜单</h2>
@@ -709,19 +748,60 @@ setInterval(loadPredictions, 60000);
 // ── 加载预测数据 ──
 async function loadPredictions() {
   try {
-    const [latestRes, historyRes] = await Promise.all([
+    const [latestRes, historyRes, accuracyRes] = await Promise.all([
       fetch('/api/predictions/latest?t=' + Date.now()),
-      fetch('/api/predictions/history?t=' + Date.now())
+      fetch('/api/predictions/history?t=' + Date.now()),
+      fetch('/api/accuracy/history?t=' + Date.now())
     ]);
     
     const latest = await latestRes.json();
     const history = await historyRes.json();
+    const accuracy = await accuracyRes.json();
     
+    renderRecap(latest, history, accuracy);
     renderLatestPrediction(latest);
-    renderPredictionHistory(history);
-    renderAccuracyTrend(history);
+    renderSellSignals(latest);
+    renderAccuracyTrend(accuracy);
   } catch(e) {
     console.error('加载预测数据失败:', e);
+  }
+}
+
+function renderRecap(latest, history, accuracy) {
+  // 从accuracy_history取最新一天的复盘数据
+  if (!accuracy || accuracy.length === 0) return;
+  const latestAcc = accuracy[accuracy.length - 1];
+  
+  document.getElementById('recap-date').textContent = latestAcc.date || '-';
+  document.getElementById('recap-direction-acc').textContent = 
+    latestAcc.direction_accuracy !== undefined ? (latestAcc.direction_accuracy * 100).toFixed(0) + '%' : 
+    latestAcc.accuracy !== undefined ? (latestAcc.accuracy * 100).toFixed(0) + '%' : '-';
+  document.getElementById('recap-avg-error').textContent = 
+    latestAcc.avg_error !== undefined ? (latestAcc.avg_error * 100).toFixed(1) + '%' : '-';
+  document.getElementById('recap-best').textContent = latestAcc.best_prediction || '-';
+  document.getElementById('recap-worst').textContent = latestAcc.worst_prediction || '-';
+  
+  // 预测vs实际对比表
+  const tbl = document.getElementById('recap-comparison');
+  tbl.innerHTML = '<tr><th>ETF</th><th>预测</th><th>实际</th><th>误差</th><th>方向</th></tr>';
+  
+  if (latest && latest.rankings) {
+    latest.rankings.forEach(r => {
+      const pred = r.calibrated_prediction || r.chg_pct || 0;
+      const actual = r.actual_change || null;
+      const err = actual !== null ? Math.abs(pred - actual).toFixed(2) : '-';
+      const dir = actual !== null ? 
+        ((pred >= 0 && actual >= 0) || (pred < 0 && actual < 0) ? '✅' : '❌') : '-';
+      const cls = pred >= 0 ? 'up' : 'down';
+      
+      tbl.innerHTML += `<tr>
+        <td>${r.name}</td>
+        <td class="${cls}">${pred >= 0 ? '+' : ''}${pred.toFixed(2)}%</td>
+        <td class="${actual >= 0 ? 'up' : 'down'}">${actual !== null ? (actual >= 0 ? '+' : '') + actual.toFixed(2) + '%' : '-'}</td>
+        <td>${err !== '-' ? err + '%' : '-'}</td>
+        <td>${dir}</td>
+      </tr>`;
+    });
   }
 }
 
@@ -731,10 +811,10 @@ function renderLatestPrediction(data) {
   document.getElementById('pred-date').textContent = data.date || '-';
   
   const tbl = document.getElementById('latest-prediction');
-  tbl.innerHTML = '<tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>';
+  tbl.innerHTML = '<tr><th>#</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>';
   
   data.rankings.forEach((item, i) => {
-    const pred = item.calibrated_prediction || item.calibrated_prediction || 0;
+    const pred = item.calibrated_prediction || item.chg_pct || 0;
     const cls = pred >= 0 ? 'up' : 'down';
     const sign = pred >= 0 ? '+' : '';
     const confidence = item.confidence || '中';
@@ -748,64 +828,42 @@ function renderLatestPrediction(data) {
       <td style="font-size:0.75rem;color:#6b7b99">${item.reason || '-'}</td>
     </tr>`;
   });
+}
+
+function renderSellSignals(data) {
+  if (!data) return;
   
-  // 卖出信号
+  const tbl = document.getElementById('sell-signals');
+  tbl.innerHTML = '<tr><th>ETF</th><th>预测涨跌</th><th>风险提示</th></tr>';
+  
   if (data.sell_signals && data.sell_signals.length > 0) {
-    tbl.innerHTML += '<tr><td colspan="5" style="color:var(--up);font-weight:bold;padding-top:10px">⚠️ 卖出信号</td></tr>';
     data.sell_signals.forEach(item => {
       tbl.innerHTML += `<tr>
-        <td>-</td>
         <td>${item.name}</td>
         <td class="down">${item.prediction}%</td>
-        <td style="color:var(--up)">谨慎</td>
         <td style="font-size:0.75rem;color:#6b7b99">${item.reason}</td>
       </tr>`;
     });
+  } else {
+    tbl.innerHTML += '<tr><td colspan="3" style="color:#6b7b99;text-align:center">暂无卖出信号</td></tr>';
+  }
+  
+  // 风险提示
+  const riskDiv = document.getElementById('risk-warnings');
+  if (data.risk_warnings && data.risk_warnings.length > 0) {
+    riskDiv.innerHTML = data.risk_warnings.map(r => 
+      `<div style="padding:4px 0;color:var(--orange);">⚠️ ${r}</div>`
+    ).join('');
+  } else {
+    riskDiv.innerHTML = '<div style="color:#6b7b99;">暂无风险提示</div>';
   }
 }
 
-function renderPredictionHistory(history) {
-  if (!history || history.length === 0) return;
+function renderAccuracyTrend(accuracy) {
+  if (!accuracy || accuracy.length === 0) return;
   
-  const tbl = document.getElementById('prediction-history');
-  tbl.innerHTML = '<tr><th>日期</th><th>推荐ETF</th><th>预测涨跌</th><th>实际涨跌</th><th>误差</th><th>方向</th></tr>';
-  
-  history.forEach(pred => {
-    if (!pred.rankings) return;
-    const top1 = pred.rankings[0];
-    if (!top1) return;
-    
-    const predDate = pred.date || '-';
-    const predPct = top1.calibrated_prediction || 0;
-    const actualPct = top1.actual_change || null;
-    const error = actualPct !== null ? Math.abs(predPct - actualPct).toFixed(2) : '-';
-    const direction = actualPct !== null ? 
-      (predPct >= 0 && actualPct >= 0) || (predPct < 0 && actualPct < 0) ? '✅' : '❌' : '-';
-    
-    tbl.innerHTML += `<tr>
-      <td>${predDate}</td>
-      <td>${top1.name}</td>
-      <td class="${predPct >= 0 ? 'up' : 'down'}">${predPct >= 0 ? '+' : ''}${predPct.toFixed(2)}%</td>
-      <td class="${actualPct >= 0 ? 'up' : 'down'}">${actualPct !== null ? (actualPct >= 0 ? '+' : '') + actualPct.toFixed(2) + '%' : '-'}</td>
-      <td>${error !== '-' ? error + '%' : '-'}</td>
-      <td>${direction}</td>
-    </tr>`;
-  });
-}
-
-function renderAccuracyTrend(history) {
-  if (!history || history.length === 0) return;
-  
-  const labels = history.map(h => h.date || '').reverse();
-  const accuracyData = history.map(h => {
-    if (!h.rankings) return 0;
-    const correct = h.rankings.filter(r => {
-      if (r.actual_change === null || r.actual_change === undefined) return false;
-      return (r.calibrated_prediction >= 0 && r.actual_change >= 0) || 
-             (r.calibrated_prediction < 0 && r.actual_change < 0);
-    }).length;
-    return h.rankings.length > 0 ? Math.round(correct / h.rankings.length * 100) : 0;
-  }).reverse();
+  const labels = accuracy.map(a => a.date);
+  const accData = accuracy.map(a => (a.accuracy || a.direction_accuracy || 0) * 100);
   
   if (window.accuracyTrendChart) window.accuracyTrendChart.destroy();
   
@@ -815,11 +873,13 @@ function renderAccuracyTrend(history) {
       labels: labels,
       datasets: [{
         label: '方向准确率(%)',
-        data: accuracyData,
+        data: accData,
         borderColor: '#4a6cf5',
         backgroundColor: 'rgba(74,108,245,0.1)',
         fill: true,
-        tension: 0.3
+        tension: 0.3,
+        pointBackgroundColor: '#4a6cf5',
+        pointRadius: 5
       }]
     },
     options: {
@@ -833,6 +893,7 @@ function renderAccuracyTrend(history) {
     }
   });
 }
+
 </script>
 </body>
 </html>
