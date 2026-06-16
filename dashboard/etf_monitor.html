@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadData();
   updateClock();
   setInterval(updateClock, 1000);
-  // 自动刷新（30秒）
+  // 自动刷新(30秒)
   refreshTimer = setInterval(loadData, 30000);
 });
 
@@ -583,7 +583,7 @@ async function loadData() {
     renderCharts();
     
     document.getElementById('data-dot').className = 'dot';
-    document.getElementById('data-status').textContent = `数据源：通达信 (${allETFs.length}只)`;
+    document.getElementById('data-status').textContent = `数据源: 通达信 (${allETFs.length}只)`;
   } catch (err) {
     console.error('加载数据失败:', err);
     document.getElementById('data-dot').className = 'dot offline';
