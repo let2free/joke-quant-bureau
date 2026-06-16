@@ -1,0 +1,123 @@
+{
+  "indices": {
+    "上证指数": {
+      "code": "000001",
+      "price": 4096.0,
+      "chg_pct": 1.61
+    },
+    "深证成指": {
+      "code": "399001",
+      "price": 14963.41,
+      "chg_pct": 3.79
+    },
+    "创业板指": {
+      "code": "399006",
+      "price": 4033.0,
+      "chg_pct": 5.3
+    },
+    "科创50": {
+      "code": "000688",
+      "price": 1680.0,
+      "chg_pct": 5.12
+    }
+  },
+  "etfs": {
+    "515880": {
+      "name": "通信ETF",
+      "price": 3.45,
+      "chg_pct": 6.63,
+      "score_b": 76.0,
+      "factor_mom": 92,
+      "factor_mr": 45,
+      "factor_flow": 88,
+      "factor_ms": 20,
+      "factor_vol": 65,
+      "factor_regime": 70
+    },
+    "588000": {
+      "name": "科创50ETF",
+      "price": 1.85,
+      "chg_pct": 5.01,
+      "score_b": 79.0,
+      "factor_mom": 85,
+      "factor_mr": 52,
+      "factor_flow": 75,
+      "factor_ms": 95,
+      "factor_vol": 60,
+      "factor_regime": 70
+    },
+    "560780": {
+      "name": "半导体设备ETF",
+      "price": 3.1,
+      "chg_pct": 4.75,
+      "score_b": 73.7,
+      "factor_mom": 88,
+      "factor_mr": 48,
+      "factor_flow": 72,
+      "factor_ms": 15,
+      "factor_vol": 70,
+      "factor_regime": 70
+    },
+    "562500": {
+      "name": "机器人ETF",
+      "price": 0.92,
+      "chg_pct": 3.13,
+      "score_b": 68.0,
+      "factor_mom": 55,
+      "factor_mr": 60,
+      "factor_flow": 45,
+      "factor_ms": 10,
+      "factor_vol": 55,
+      "factor_regime": 70
+    },
+    "516160": {
+      "name": "新能源ETF",
+      "price": 2.3,
+      "chg_pct": 2.06,
+      "score_b": 62.0,
+      "factor_mom": 40,
+      "factor_mr": 70,
+      "factor_flow": 35,
+      "factor_ms": 5,
+      "factor_vol": 50,
+      "factor_regime": 70
+    },
+    "516080": {
+      "name": "创新药ETF",
+      "price": 0.57,
+      "chg_pct": -0.51,
+      "score_b": 55.0,
+      "factor_mom": 20,
+      "factor_mr": 80,
+      "factor_flow": 25,
+      "factor_ms": 5,
+      "factor_vol": 40,
+      "factor_regime": 70
+    }
+  },
+  "factors": {
+    "L0_liquidity": "🟡 中性偏宽松（置信度70%）",
+    "L4b_events": [
+      {
+        "etf": "科创50ETF",
+        "event": "指数调仓效应已发生（6/12）",
+        "impact": "🟢 强"
+      }
+    ],
+    "market_regime": "🟡 震荡偏多",
+    "fomc_prob": {
+      "dove": 40,
+      "neutral": 35,
+      "hawk": 25
+    }
+  },
+  "agent_status": {
+    "指挥官": "🟢 在线",
+    "大A": "🟡 待命",
+    "老美": "🟡 待命",
+    "军机处": "🟡 待命",
+    "量化1哥": "🟡 待命",
+    "包青天": "🟡 待命"
+  },
+  "updated_at": "2026-06-16T02:32:39.907750"
+}
