@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>历史数据 - 九章量化局</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #0a0e27;
+    color: #e0e6ff;
+    min-height: 100vh;
+  }
+  :root {
+    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
+    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
+    --bg-card: #121630; --border: #1e264a;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
+  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
+  .nav-tab {
+    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    text-decoration: none; transition: all 0.3s;
+  }
+  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
+  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
+
+  .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+  
+  .section-title {
+    font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .icon { font-size: 1.3rem; }
+  
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 16px;
+  }
+  .card h3 {
+    font-size: 0.85rem; color: #6b7b99; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  
+  /* 日期选择器 */
+  .date-selector {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 20px;
+  }
+  .date-selector select, .date-selector button {
+    padding: 8px 16px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; color: #c0c8e0; font-size: 0.9rem;
+  }
+  .date-selector button {
+    background: var(--blue); border-color: var(--blue); cursor: pointer;
+  }
+  .date-selector button:hover { background: #3a5ce5; }
+  
+  /* 数据表格 */
+  .data-table {
+    width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  }
+  .data-table th {
+    background: #1a1f4a; color: #6b7b99; padding: 10px;
+    text-align: left; border-bottom: 2px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px; border-bottom: 1px solid var(--border);
+  }
+  .data-table tr:hover { background: #1a1f4a33; }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+  
+  /* 指标卡片 */
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;
+  }
+  .metric-card {
+    background: linear-gradient(135deg, #1a1f4a 0%, #121630 100%);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .metric-value { font-size: 1.8rem; font-weight: bold; color: var(--cyan); }
+  .metric-label { font-size: 0.75rem; color: #6b7b99; margin-top: 4px; }
+  
+  /* 导入面板 */
+  .import-panel {
+    background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 10px; padding: 20px; margin-bottom: 20px;
+  }
+  .import-panel h3 { color: var(--cyan); margin-bottom: 15px; }
+  .import-form {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.8rem; color: #6b7b99; }
+  .form-group select, .form-group input {
+    padding: 8px 12px; background: #0a0e27; border: 1px solid #2a3f6a;
+    border-radius: 5px; color: #c0c8e0; font-size: 0.9rem;
+  }
+  .import-btn {
+    grid-column: span 3; padding: 10px; background: var(--blue);
+    border: none; border-radius: 5px; color: white; font-size: 0.9rem;
+    cursor: pointer; transition: background 0.3s;
+  }
+  .import-btn:hover { background: #3a5ce5; }
+  
+  .chart-container { position: relative; height: 300px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⬡ 九章量化局 · 历史数据</h1>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <div class="nav-tabs">
+      <a href="dashboard.html" class="nav-tab">📊 预测看板</a>
+      <a href="lobster_collab.html" class="nav-tab">🦞 龙虾协同</a>
+      <a href="backtest.html" class="nav-tab">📈 回测验证</a>
+      <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
+      <a href="history.html" class="nav-tab active">📁 历史数据</a>
+    </div>
+    <div style="font-size: 0.8rem; color: #6b7b99;">
+      <span id="clock">--:--:--</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- 数据导入面板 -->
+  <div class="section-title">
+    <span class="icon">📥</span> 数据导入
+  </div>
+  <div class="import-panel">
+    <h3>导入历史数据</h3>
+    <div class="import-form">
+      <div class="form-group">
+        <label>数据平台</label>
+        <select id="platform-select">
+          <option value="tdx">通达信</option>
+          <option value="ths">同花顺</option>
+          <option value="eastmoney">东方财富</option>
+          <option value="wind">Wind</option>
+          <option value="joinquant">聚宽</option>
+          <option value="csv">通用CSV</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>数据日期</label>
+        <input type="date" id="data-date" value="2026-06-16">
+      </div>
+      <div class="form-group">
+        <label>选择文件</label>
+        <input type="file" id="file-input" accept=".csv,.txt,.xls,.xlsx">
+      </div>
+      <button class="import-btn" onclick="importData()">📥 导入数据</button>
+    </div>
+  </div>
+  
+  <!-- 核心指标 -->
+  <div class="section-title">
+    <span class="icon">📊</span> 核心指标
+  </div>
+  <div class="metric-grid" id="metrics-grid">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- 日期选择器 -->
+  <div class="section-title">
+    <span class="icon">📅</span> 历史记录
+  </div>
+  <div class="date-selector">
+    <select id="date-select">
+      <option value="2026-06-16">2026-06-16</option>
+    </select>
+    <button onclick="loadHistory()">加载数据</button>
+    <button onclick="exportData()" style="background: #00d4ff;">导出数据</button>
+  </div>
+  
+  <!-- 预测数据表格 -->
+  <div class="card">
+    <h3>预测记录</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>排名</th>
+          <th>ETF代码</th>
+          <th>ETF名称</th>
+          <th>预测得分</th>
+          <th>实际涨跌</th>
+          <th>预测准确</th>
+        </tr>
+      </thead>
+      <tbody id="prediction-table">
+        <!-- 动态填充 -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- 准确率趋势图 -->
+  <div class="card">
+    <h3>准确率趋势</h3>
+    <div class="chart-container">
+      <canvas id="accuracyChart"></canvas>
+    </div>
+  </div>
+  
+  <!-- 因子得分图 -->
+  <div class="card">
+    <h3>因子得分分布</h3>
+    <div class="chart-container">
+      <canvas id="factorChart"></canvas>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+// 模拟历史数据
+const historyData = {
+  '2026-06-16': {
+    metrics: [
+      { label: '预测准确率', value: '83.3%' },
+      { label: '方向准确率', value: '100%' },
+      { label: '平均误差', value: '2.1%' },
+      { label: '最准预测', value: '通信ETF' }
+    ],
+    predictions: [
+      { rank: 1, code: '588000', name: '科创50ETF', score: 101.7, actual: '+5.01%', correct: true },
+      { rank: 2, code: '515880', name: '通信ETF', score: 80.2, actual: '+6.63%', correct: true },
+      { rank: 3, code: '560780', name: '半导体设备ETF', score: 74.8, actual: '+4.75%', correct: true },
+      { rank: 4, code: '562500', name: '机器人ETF', score: 54.5, actual: '+3.13%', correct: true },
+      { rank: 5, code: '516160', name: '新能源ETF', score: 46.4, actual: '+2.06%', correct: true },
+      { rank: 6, code: '516080', name: '创新药ETF', score: 36.5, actual: '-0.51%', correct: true }
+    ],
+    factors: {
+      momentum: [85, 92, 88, 55, 40, 20],
+      meanReversion: [52, 45, 48, 60, 70, 80],
+      volatility: [60, 65, 70, 55, 50, 40],
+      fundFlow: [75, 88, 72, 45, 35, 25],
+      microstructure: [95, 20, 15, 10, 5, 5],
+      regime: [70, 70, 70, 70, 70, 70]
+    }
+  }
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  loadHistory();
+  renderAccuracyChart();
+  updateClock();
+  setInterval(updateClock, 1000);
+});
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN');
+}
+
+function loadHistory() {
+  const date = document.getElementById('date-select').value;
+  const data = historyData[date] || historyData['2026-06-16'];
+  
+  // 渲染指标
+  const metricsGrid = document.getElementById('metrics-grid');
+  metricsGrid.innerHTML = data.metrics.map(m => `
+    <div class="metric-card">
+      <div class="metric-value">${m.value}</div>
+      <div class="metric-label">${m.label}</div>
+    </div>
+  `).join('');
+  
+  // 渲染表格
+  const tableBody = document.getElementById('prediction-table');
+  tableBody.innerHTML = data.predictions.map(p => `
+    <tr>
+      <td>${p.rank}</td>
+      <td>${p.code}</td>
+      <td>${p.name}</td>
+      <td>${p.score}</td>
+      <td class="${p.actual.startsWith('+') ? 'up' : 'down'}">${p.actual}</td>
+      <td>${p.correct ? '✅' : '❌'}</td>
+    </tr>
+  `).join('');
+  
+  // 渲染因子图
+  renderFactorChart(data.factors);
+}
+
+function renderAccuracyChart() {
+  new Chart(document.getElementById('accuracyChart'), {
+    type: 'line',
+    data: {
+      labels: ['6/10', '6/11', '6/12', '6/13', '6/14', '6/15', '6/16'],
+      datasets: [
+        {
+          label: '排名准确率',
+          data: [75, 80, 70, 85, 78, 82, 83],
+          borderColor: '#4a6cf5',
+          backgroundColor: 'rgba(74,108,245,0.1)',
+          fill: true
+        },
+        {
+          label: '方向准确率',
+          data: [90, 95, 85, 100, 92, 98, 100],
+          borderColor: '#00e676',
+          backgroundColor: 'rgba(0,230,118,0.1)',
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7b99' } } },
+      scales: {
+        x: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } },
+        y: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' }, max: 100 }
+      }
+    }
+  });
+}
+
+function renderFactorChart(factors) {
+  const ctx = document.getElementById('factorChart');
+  
+  // 销毁旧图表
+  if (window.factorChartInstance) {
+    window.factorChartInstance.destroy();
+  }
+  
+  window.factorChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['动量', '均值回归', '波动率', '资金流', '微观结构', '市场状态'],
+      datasets: [
+        {
+          label: '科创50ETF',
+          data: factors.momentum.slice(0, 1).concat(
+            factors.meanReversion.slice(0, 1),
+            factors.volatility.slice(0, 1),
+            factors.fundFlow.slice(0, 1),
+            factors.microstructure.slice(0, 1),
+            factors.regime.slice(0, 1)
+          ),
+          borderColor: '#4a6cf5',
+          backgroundColor: 'rgba(74,108,245,0.2)'
+        },
+        {
+          label: '通信ETF',
+          data: factors.momentum.slice(1, 2).concat(
+            factors.meanReversion.slice(1, 2),
+            factors.volatility.slice(1, 2),
+            factors.fundFlow.slice(1, 2),
+            factors.microstructure.slice(1, 2),
+            factors.regime.slice(1, 2)
+          ),
+          borderColor: '#00d4ff',
+          backgroundColor: 'rgba(0,212,255,0.2)'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7b99' } } },
+      scales: {
+        r: {
+          angleLines: { color: '#1e264a' },
+          grid: { color: '#1e264a' },
+          pointLabels: { color: '#c0c8e0' },
+          ticks: { color: '#6b7b99', backdropColor: 'transparent' },
+          max: 100
+        }
+      }
+    }
+  });
+}
+
+function importData() {
+  const platform = document.getElementById('platform-select').value;
+  const date = document.getElementById('data-date').value;
+  const fileInput = document.getElementById('file-input');
+  
+  if (!fileInput.files.length) {
+    alert('请选择文件');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('platform', platform);
+  formData.append('date', date);
+  formData.append('file', fileInput.files[0]);
+  
+  fetch('/api/import', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert(`导入成功！${data.record_count}条记录`);
+      // 刷新日期列表
+      loadDateList();
+    } else {
+      alert('导入失败：' + data.error);
+    }
+  })
+  .catch(err => {
+    alert('导入失败：' + err.message);
+  });
+}
+
+function loadDateList() {
+  fetch('/api/artifacts/list')
+    .then(res => res.json())
+    .then(data => {
+      const select = document.getElementById('date-select');
+      select.innerHTML = data.dates.map(d => `<option value="${d}">${d}</option>`).join('');
+    });
+}
+
+function exportData() {
+  const date = document.getElementById('date-select').value;
+  window.open(`/api/export?date=${date}&format=csv`);
+}
+</script>
+</body>
+</html>

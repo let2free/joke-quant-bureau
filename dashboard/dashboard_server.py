@@ -16,6 +16,9 @@ from pathlib import Path
 # 导入回测模块
 import backtest
 
+# 导入数据导入模块
+from data_importer import importer
+
 # 配置
 PORT = 7860
 BIND_ADDR = "0.0.0.0"
@@ -298,6 +301,46 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             data = load_conflicts()
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
 
+        # API: 历史数据日期列表
+        elif path == "/api/artifacts/list":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            artifacts_dir = DATA_DIR / "artifacts"
+            dates = []
+            if artifacts_dir.exists():
+                dates = sorted([d.name for d in artifacts_dir.iterdir() if d.is_dir()], reverse=True)
+            self.wfile.write(json.dumps({"dates": dates}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 导出数据
+        elif path == "/api/export":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Disposition", "attachment; filename=export.csv")
+            self.end_headers()
+            # 获取查询参数
+            params = {}
+            if "?" in self.path:
+                query = self.path.split("?")[1]
+                for pair in query.split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        params[k] = v
+            date = params.get("date", datetime.now().strftime("%Y-%m-%d"))
+            # 读取数据并导出CSV
+            fusion_file = DATA_DIR / "artifacts" / date / "fusion_report.json"
+            if fusion_file.exists():
+                with open(fusion_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                csv_content = "排名,ETF代码,ETF名称,Track_B得分,融合得分,涨跌幅\n"
+                for r in data.get("rankings", []):
+                    csv_content += f"{r.get('rank_fused', '')},{r.get('code', '')},{r.get('name', '')},{r.get('score_b', '')},{r.get('score_fused', '')},{r.get('chg_pct', '')}%\n"
+                self.wfile.write(csv_content.encode("utf-8"))
+            else:
+                self.wfile.write(b"No data for this date.")
+
         # API: 回测 - 准确率历史
         elif path == "/api/backtest/accuracy":
             self.send_response(200)
@@ -403,6 +446,76 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
             except Exception as e:
                 self.send_error(500, str(e))
+
+        # API: 导入历史数据
+        elif path == "/api/import":
+            try:
+                # 解析multipart/form-data
+                content_type = self.headers.get('Content-Type', '')
+                if 'multipart/form-data' not in content_type:
+                    raise ValueError("Expected multipart/form-data")
+                
+                # 提取boundary
+                boundary = content_type.split('boundary=')[1].encode()
+                
+                # 解析body
+                parts = body.split(b'--' + boundary)
+                form_data = {}
+                file_data = None
+                file_name = None
+                
+                for part in parts:
+                    if b'Content-Disposition' not in part:
+                        continue
+                    if b'filename=' in part:
+                        # 文件部分
+                        header_end = part.find(b'\r\n\r\n')
+                        header = part[:header_end].decode()
+                        file_name = header.split('filename="')[1].split('"')[0]
+                        file_data = part[header_end + 4:-2]  # 去掉末尾的\r\n
+                    else:
+                        # 表单字段
+                        header_end = part.find(b'\r\n\r\n')
+                        header = part[:header_end].decode()
+                        name = header.split('name="')[1].split('"')[0]
+                        value = part[header_end + 4:-2].decode()
+                        form_data[name] = value
+                
+                platform = form_data.get('platform', 'csv')
+                date = form_data.get('date', datetime.now().strftime('%Y-%m-%d'))
+                
+                # 保存上传的文件
+                if file_data and file_name:
+                    upload_dir = DATA_DIR / "uploads"
+                    upload_dir.mkdir(exist_ok=True)
+                    file_path = upload_dir / file_name
+                    with open(file_path, "wb") as f:
+                        f.write(file_data)
+                    
+                    # 根据平台类型导入
+                    import_func = {
+                        'tdx': importer.import_tdx,
+                        'ths': importer.import_ths,
+                        'eastmoney': importer.import_eastmoney,
+                        'wind': importer.import_wind,
+                        'joinquant': importer.import_joinquant,
+                        'csv': importer.import_csv
+                    }.get(platform, importer.import_csv)
+                    
+                    result = import_func(str(file_path), date)
+                    
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+                else:
+                    raise ValueError("No file uploaded")
+                    
+            except Exception as e:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False).encode("utf-8"))
 
         else:
             self.send_error(404, "Not Found")

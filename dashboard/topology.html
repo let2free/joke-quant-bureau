@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拓扑分析 - 九章量化局</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #0a0e27;
+    color: #e0e6ff;
+    min-height: 100vh;
+  }
+  :root {
+    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
+    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
+    --orange: #ff9f43; --pink: #ff6b9d;
+    --bg-card: #121630; --border: #1e264a;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
+  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
+  .nav-tab {
+    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    text-decoration: none; transition: all 0.3s;
+  }
+  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
+  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
+
+  .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+  
+  .section-title {
+    font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .icon { font-size: 1.3rem; }
+  
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; transition: border-color 0.3s;
+  }
+  .card:hover { border-color: var(--blue); }
+  .card h3 {
+    font-size: 0.85rem; color: #6b7b99; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  
+  /* 资金流向 */
+  .flow-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid #0a0e271a;
+  }
+  .flow-item:last-child { border-bottom: none; }
+  .flow-name { flex: 1; font-size: 0.9rem; }
+  .flow-value { font-family: 'Courier New', monospace; font-weight: bold; min-width: 80px; text-align: right; }
+  .flow-in { color: var(--up); }
+  .flow-out { color: var(--down); }
+  
+  /* 行业轮动 */
+  .sector-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .sector-item {
+    background: #0a0e27; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; text-align: center; transition: all 0.3s;
+  }
+  .sector-item:hover { border-color: var(--cyan); transform: translateY(-2px); }
+  .sector-name { font-size: 0.8rem; color: #6b7b99; margin-bottom: 4px; }
+  .sector-value { font-size: 1.1rem; font-weight: bold; }
+  .sector-hot { color: var(--up); }
+  .sector-cold { color: var(--down); }
+  .sector-neutral { color: var(--flat); }
+  
+  /* 消息舆情 */
+  .news-item {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 12px;
+  }
+  .news-item:last-child { border-bottom: none; }
+  .news-time { font-size: 0.75rem; color: #6b7b99; min-width: 60px; }
+  .news-content { flex: 1; font-size: 0.85rem; color: #c0c8e0; }
+  .news-impact {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 0.7rem; font-weight: bold;
+  }
+  .impact-positive { background: rgba(0,230,118,0.2); color: var(--down); }
+  .impact-negative { background: rgba(255,77,106,0.2); color: var(--up); }
+  .impact-neutral { background: rgba(107,123,153,0.2); color: var(--flat); }
+  
+  /* SVG拓扑图 */
+  .topology-container {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; min-height: 400px;
+  }
+  svg text { font-family: 'Microsoft YaHei', sans-serif; }
+  
+  /* 指标卡片 */
+  .metric-card {
+    background: linear-gradient(135deg, #1a1f4a 0%, #121630 100%);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .metric-value { font-size: 1.8rem; font-weight: bold; color: var(--cyan); }
+  .metric-label { font-size: 0.75rem; color: #6b7b99; margin-top: 4px; }
+  .metric-change { font-size: 0.8rem; margin-top: 6px; }
+  .metric-up { color: var(--up); }
+  .metric-down { color: var(--down); }
+  
+  /* 图表容器 */
+  .chart-container { position: relative; height: 300px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⬡ 九章量化局 · 拓扑分析</h1>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <div class="nav-tabs">
+      <a href="dashboard.html" class="nav-tab">📊 预测看板</a>
+      <a href="lobster_collab.html" class="nav-tab">🦞 龙虾协同</a>
+      <a href="backtest.html" class="nav-tab">📈 回测验证</a>
+      <a href="topology.html" class="nav-tab active">🔗 拓扑分析</a>
+    </div>
+    <div style="font-size: 0.8rem; color: #6b7b99;">
+      <span id="clock">--:--:--</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- 核心指标 -->
+  <div class="section-title">
+    <span class="icon">📊</span> 核心指标
+  </div>
+  <div class="grid grid-4" id="metrics-grid">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- 资金流向分析 -->
+  <div class="section-title">
+    <span class="icon">💰</span> 资金流向分析
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>行业资金流向（今日净流入）</h3>
+      <div id="sector-flow">
+        <!-- 动态填充 -->
+      </div>
+    </div>
+    <div class="card">
+      <h3>资金流向趋势（近7日）</h3>
+      <div class="chart-container">
+        <canvas id="flowTrendChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 行业轮动分析 -->
+  <div class="section-title">
+    <span class="icon">🔄</span> 行业轮动分析
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>行业热度矩阵</h3>
+      <div class="sector-grid" id="sector-heatmap">
+        <!-- 动态填充 -->
+      </div>
+    </div>
+    <div class="card">
+      <h3>轮动周期图</h3>
+      <div class="chart-container">
+        <canvas id="rotationChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 消息舆情分析 -->
+  <div class="section-title">
+    <span class="icon">📰</span> 消息舆情分析
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>今日重要消息</h3>
+      <div id="news-feed">
+        <!-- 动态填充 -->
+      </div>
+    </div>
+    <div class="card">
+      <h3>舆情情绪指数</h3>
+      <div class="chart-container">
+        <canvas id="sentimentChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 拓扑关系图 -->
+  <div class="section-title">
+    <span class="icon">🔗</span> 资金-行业-消息 拓扑关系
+  </div>
+  <div class="topology-container">
+    <svg id="topologySvg" width="100%" height="500" viewBox="0 0 1200 500">
+      <!-- 动态生成 -->
+    </svg>
+  </div>
+  
+</div>
+
+<script>
+// 模拟数据（实际使用时从API获取）
+const mockData = {
+  metrics: [
+    { label: '北向资金', value: '+86.5亿', change: '+12.3%', up: true },
+    { label: '融资余额', value: '1.85万亿', change: '+0.8%', up: true },
+    { label: '市场情绪', value: '72', change: '偏多', up: true },
+    { label: '轮动强度', value: '68', change: '中等', up: null }
+  ],
+  sectorFlow: [
+    { name: '半导体', value: 45.2, unit: '亿' },
+    { name: '新能源', value: 32.8, unit: '亿' },
+    { name: '医药', value: -18.5, unit: '亿' },
+    { name: '消费', value: -12.3, unit: '亿' },
+    { name: '金融', value: 28.6, unit: '亿' },
+    { name: '军工', value: 15.4, unit: '亿' }
+  ],
+  sectors: [
+    { name: '半导体', value: 5.2, hot: true },
+    { name: 'AI算力', value: 4.8, hot: true },
+    { name: '新能源车', value: 3.5, hot: true },
+    { name: '光伏', value: 2.1, hot: true },
+    { name: '医药', value: -1.2, hot: false },
+    { name: '消费', value: -0.8, hot: false },
+    { name: '地产', value: -2.5, hot: false },
+    { name: '银行', value: 0.5, hot: null }
+  ],
+  news: [
+    { time: '09:15', content: '国务院常务会议强调加大半导体产业支持力度', impact: 'positive' },
+    { time: '10:30', content: '央行开展1000亿元MLF操作，利率持平', impact: 'neutral' },
+    { time: '13:45', content: '新能源汽车销量数据超预期，同比增长45%', impact: 'positive' },
+    { time: '14:20', content: '美联储鹰派言论引发市场担忧', impact: 'negative' },
+    { time: '15:00', content: '北向资金今日净买入86.5亿元', impact: 'positive' }
+  ]
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  renderMetrics();
+  renderSectorFlow();
+  renderSectorHeatmap();
+  renderNewsFeed();
+  renderFlowTrendChart();
+  renderRotationChart();
+  renderSentimentChart();
+  renderTopology();
+  updateClock();
+  setInterval(updateClock, 1000);
+});
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN');
+}
+
+function renderMetrics() {
+  const grid = document.getElementById('metrics-grid');
+  grid.innerHTML = mockData.metrics.map(m => `
+    <div class="metric-card">
+      <div class="metric-value">${m.value}</div>
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-change ${m.up === true ? 'metric-up' : m.up === false ? 'metric-down' : ''}">${m.change}</div>
+    </div>
+  `).join('');
+}
+
+function renderSectorFlow() {
+  const container = document.getElementById('sector-flow');
+  container.innerHTML = mockData.sectorFlow.map(s => `
+    <div class="flow-item">
+      <span class="flow-name">${s.name}</span>
+      <span class="flow-value ${s.value >= 0 ? 'flow-in' : 'flow-out'}">
+        ${s.value >= 0 ? '+' : ''}${s.value}${s.unit}
+      </span>
+    </div>
+  `).join('');
+}
+
+function renderSectorHeatmap() {
+  const container = document.getElementById('sector-heatmap');
+  container.innerHTML = mockData.sectors.map(s => `
+    <div class="sector-item">
+      <div class="sector-name">${s.name}</div>
+      <div class="sector-value ${s.hot === true ? 'sector-hot' : s.hot === false ? 'sector-cold' : 'sector-neutral'}">
+        ${s.value >= 0 ? '+' : ''}${s.value}%
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderNewsFeed() {
+  const container = document.getElementById('news-feed');
+  container.innerHTML = mockData.news.map(n => `
+    <div class="news-item">
+      <span class="news-time">${n.time}</span>
+      <span class="news-content">
+        ${n.content}
+        <span class="news-impact impact-${n.impact}">${
+          n.impact === 'positive' ? '利好' : 
+          n.impact === 'negative' ? '利空' : '中性'
+        }</span>
+      </span>
+    </div>
+  `).join('');
+}
+
+function renderFlowTrendChart() {
+  new Chart(document.getElementById('flowTrendChart'), {
+    type: 'line',
+    data: {
+      labels: ['6/10', '6/11', '6/12', '6/13', '6/14', '6/15', '6/16'],
+      datasets: [
+        {
+          label: '北向资金(亿)',
+          data: [45, 62, -30, 78, 55, 90, 86],
+          borderColor: '#4a6cf5',
+          backgroundColor: 'rgba(74,108,245,0.1)',
+          fill: true
+        },
+        {
+          label: '融资净买入(亿)',
+          data: [20, 35, 15, 42, 28, 55, 40],
+          borderColor: '#00d4ff',
+          backgroundColor: 'rgba(0,212,255,0.1)',
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7b99' } } },
+      scales: {
+        x: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } },
+        y: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } }
+      }
+    }
+  });
+}
+
+function renderRotationChart() {
+  new Chart(document.getElementById('rotationChart'), {
+    type: 'radar',
+    data: {
+      labels: ['半导体', 'AI算力', '新能源', '医药', '消费', '金融'],
+      datasets: [
+        {
+          label: '本周热度',
+          data: [92, 88, 75, 45, 38, 60],
+          borderColor: '#4a6cf5',
+          backgroundColor: 'rgba(74,108,245,0.2)'
+        },
+        {
+          label: '上周热度',
+          data: [78, 82, 80, 55, 42, 50],
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168,85,247,0.2)'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7b99' } } },
+      scales: {
+        r: {
+          angleLines: { color: '#1e264a' },
+          grid: { color: '#1e264a' },
+          pointLabels: { color: '#c0c8e0' },
+          ticks: { color: '#6b7b99', backdropColor: 'transparent' }
+        }
+      }
+    }
+  });
+}
+
+function renderSentimentChart() {
+  new Chart(document.getElementById('sentimentChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['乐观', '中性', '悲观'],
+      datasets: [{
+        data: [55, 30, 15],
+        backgroundColor: ['#00e676', '#6b7b99', '#ff4d6a'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#6b7b99', padding: 15 } }
+      }
+    }
+  });
+}
+
+function renderTopology() {
+  const svg = document.getElementById('topologySvg');
+  const width = 1200, height = 500;
+  
+  // 节点定义
+  const nodes = [
+    // 资金节点（左侧）
+    { id: 'fund_north', label: '北向资金', x: 100, y: 100, type: 'fund', value: '+86.5亿' },
+    { id: 'fund_margin', label: '融资资金', x: 100, y: 250, type: 'fund', value: '+40亿' },
+    { id: 'fund_main', label: '主力资金', x: 100, y: 400, type: 'fund', value: '+52亿' },
+    
+    // 行业节点（中间）
+    { id: 'sector_semi', label: '半导体', x: 500, y: 80, type: 'sector', value: '+5.2%' },
+    { id: 'sector_ai', label: 'AI算力', x: 500, y: 200, type: 'sector', value: '+4.8%' },
+    { id: 'sector_nev', label: '新能源', x: 500, y: 320, type: 'sector', value: '+3.5%' },
+    { id: 'sector_med', label: '医药', x: 500, y: 440, type: 'sector', value: '-1.2%' },
+    
+    // 消息节点（右侧）
+    { id: 'news_policy', label: '政策利好', x: 900, y: 100, type: 'news', value: '国务院' },
+    { id: 'news_data', label: '数据超预期', x: 900, y: 250, type: 'news', value: '销量+45%' },
+    { id: 'news_fed', label: '美联储鹰派', x: 900, y: 400, type: 'news', value: '利空' }
+  ];
+  
+  // 连接定义
+  const links = [
+    // 资金 → 行业
+    { from: 'fund_north', to: 'sector_semi', value: 30 },
+    { from: 'fund_north', to: 'sector_ai', value: 25 },
+    { from: 'fund_margin', to: 'sector_semi', value: 20 },
+    { from: 'fund_margin', to: 'sector_nev', value: 15 },
+    { from: 'fund_main', to: 'sector_ai', value: 28 },
+    { from: 'fund_main', to: 'sector_nev', value: 18 },
+    
+    // 消息 → 行业
+    { from: 'news_policy', to: 'sector_semi', value: 35 },
+    { from: 'news_data', to: 'sector_nev', value: 30 },
+    { from: 'news_fed', to: 'sector_med', value: 20 }
+  ];
+  
+  // 绘制连接线
+  links.forEach(link => {
+    const from = nodes.find(n => n.id === link.from);
+    const to = nodes.find(n => n.id === link.to);
+    const opacity = Math.min(link.value / 35, 1);
+    
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.setAttribute('stroke', from.type === 'fund' ? '#4a6cf5' : '#ff9f43');
+    line.setAttribute('stroke-width', link.value / 10);
+    line.setAttribute('stroke-opacity', opacity);
+    svg.appendChild(line);
+  });
+  
+  // 绘制节点
+  nodes.forEach(node => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    
+    // 节点圆圈
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', node.x);
+    circle.setAttribute('cy', node.y);
+    circle.setAttribute('r', 30);
+    circle.setAttribute('fill', node.type === 'fund' ? '#1a3a6a' : 
+                                 node.type === 'sector' ? '#1a4a3a' : '#4a2a1a');
+    circle.setAttribute('stroke', node.type === 'fund' ? '#4a6cf5' : 
+                                   node.type === 'sector' ? '#00e676' : '#ff9f43');
+    circle.setAttribute('stroke-width', 2);
+    g.appendChild(circle);
+    
+    // 节点标签
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', node.x);
+    text.setAttribute('y', node.y - 5);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#e0e6ff');
+    text.setAttribute('font-size', '11');
+    text.textContent = node.label;
+    g.appendChild(text);
+    
+    // 节点值
+    const value = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    value.setAttribute('x', node.x);
+    value.setAttribute('y', node.y + 12);
+    value.setAttribute('text-anchor', 'middle');
+    value.setAttribute('fill', node.type === 'fund' ? '#4a6cf5' : 
+                                node.type === 'sector' ? '#00e676' : '#ff9f43');
+    value.setAttribute('font-size', '10');
+    value.textContent = node.value;
+    g.appendChild(value);
+    
+    svg.appendChild(g);
+  });
+  
+  // 添加图例
+  const legend = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  legend.setAttribute('transform', 'translate(50, 480)');
+  
+  const legendItems = [
+    { color: '#4a6cf5', label: '资金流' },
+    { color: '#00e676', label: '行业' },
+    { color: '#ff9f43', label: '消息' }
+  ];
+  
+  legendItems.forEach((item, i) => {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', i * 120);
+    circle.setAttribute('cy', 0);
+    circle.setAttribute('r', 6);
+    circle.setAttribute('fill', item.color);
+    legend.appendChild(circle);
+    
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', i * 120 + 15);
+    text.setAttribute('y', 5);
+    text.setAttribute('fill', '#6b7b99');
+    text.setAttribute('font-size', '12');
+    text.textContent = item.label;
+    legend.appendChild(text);
+  });
+  
+  svg.appendChild(legend);
+}
+</script>
+</body>
+</html>
