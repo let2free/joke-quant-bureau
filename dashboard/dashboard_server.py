@@ -13,6 +13,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# 导入回测模块
+import backtest
+
 # 配置
 PORT = 7860
 BIND_ADDR = "0.0.0.0"
@@ -293,6 +296,33 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             data = load_conflicts()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+        # API: 回测 - 准确率历史
+        elif path == "/api/backtest/accuracy":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            data = load_backtest_accuracy(self)
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+        # API: 回测 - 因子优化
+        elif path == "/api/backtest/factor-optimize":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            data = run_factor_optimization(self)
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+        # API: 回测 - 运行回测
+        elif path == "/api/backtest/run" and self.command == "POST":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            data = run_backtest_simulation(self)
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
 
         # 访问日志

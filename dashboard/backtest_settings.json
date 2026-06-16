@@ -1,0 +1,32 @@
+{
+  "backtest_settings": {
+    "initial_capital": 100000,
+    "top_n": 5,
+    "hold_days": 5,
+    "commission": 0.0003,
+    "slippage": 0.001
+  },
+  "weights_history": [
+    {
+      "date": "2026-06-16",
+      "version": "v2.0",
+      "trigger": "initial",
+      "weights": {
+        "momentum": 0.35,
+        "mean_reversion": 0.15,
+        "volatility": 0.10,
+        "capital_flow": 0.25,
+        "microstructure": 0.10,
+        "market_regime": 0.05
+      },
+      "L0_adjustment": {
+        "loose": 0.10,
+        "tight": -0.20
+      },
+      "L4b_adjustment": {
+        "impact_threshold": 3.0,
+        "weight": 0.25
+      }
+    }
+  ]
+}

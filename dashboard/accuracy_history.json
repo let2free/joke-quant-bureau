@@ -1,0 +1,14 @@
+[
+  {
+    "date": "2026-06-12",
+    "accuracy": 0.33,
+    "etfs_count": 6,
+    "recap_triggered": false
+  },
+  {
+    "date": "2026-06-15",
+    "accuracy": 0.5,
+    "etfs_count": 6,
+    "recap_triggered": true
+  }
+]
