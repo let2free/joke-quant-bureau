@@ -273,6 +273,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             html = (DATA_DIR / "etf_monitor.html").read_bytes()
             self.wfile.write(html)
 
+        # 九章量化局测算中心页面
+        elif path == "/jiuzhang.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            html = (DATA_DIR / "jiuzhang.html").read_bytes()
+            self.wfile.write(html)
+
         # API: 实时数据
         elif path == "/api/data":
             self.send_response(200)

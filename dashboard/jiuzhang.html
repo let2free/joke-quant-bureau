@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>九章量化局 · 测算中心</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #0a0e27;
+    color: #e0e6ff;
+    min-height: 100vh;
+  }
+  :root {
+    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
+    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
+    --orange: #ff9f43; --pink: #ff6b9d;
+    --bg-card: #121630; --border: #1e264a;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
+  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
+  .nav-tab {
+    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    text-decoration: none; transition: all 0.3s;
+  }
+  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
+  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
+
+  .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+  
+  .section-title {
+    font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .icon { font-size: 1.3rem; }
+  
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; transition: border-color 0.3s;
+  }
+  .card:hover { border-color: var(--blue); }
+  .card h3 {
+    font-size: 0.85rem; color: #6b7b99; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  
+  /* 指标卡片 */
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;
+  }
+  .metric-card {
+    background: linear-gradient(135deg, #1a1f4a 0%, #121630 100%);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .metric-value { font-size: 1.8rem; font-weight: bold; color: var(--cyan); }
+  .metric-label { font-size: 0.75rem; color: #6b7b99; margin-top: 4px; }
+  .metric-change { font-size: 0.8rem; margin-top: 6px; }
+  .metric-up { color: var(--up); }
+  .metric-down { color: var(--down); }
+  
+  /* 流程图 */
+  .phase-flow {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .phase-step {
+    background: #1a1f4a; border: 1px solid #2a3f6a; border-radius: 8px;
+    padding: 10px 15px; text-align: center; min-width: 120px;
+  }
+  .phase-step.active { border-color: var(--blue); background: #1a2a5a; }
+  .phase-step.completed { border-color: var(--down); background: #1a4a1a; }
+  .phase-name { font-size: 0.75rem; color: #6b7b99; margin-bottom: 4px; }
+  .phase-agent { font-size: 0.9rem; color: #c0c8e0; font-weight: bold; }
+  .phase-arrow { color: #6b7b99; font-size: 1.2rem; }
+  
+  /* 预测表格 */
+  .prediction-table {
+    width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  }
+  .prediction-table th {
+    background: #1a1f4a; color: #6b7b99; padding: 10px 8px;
+    text-align: left; border-bottom: 2px solid var(--border);
+  }
+  .prediction-table td {
+    padding: 8px; border-bottom: 1px solid var(--border);
+  }
+  .prediction-table tr:hover { background: #1a1f4a33; }
+  .prediction-table .up { color: var(--up); }
+  .prediction-table .down { color: var(--down); }
+  
+  /* 因子雷达图容器 */
+  .radar-container { position: relative; height: 300px; }
+  
+  /* 置信度指示器 */
+  .confidence-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 0.75rem; font-weight: bold;
+  }
+  .confidence-high { background: rgba(0,230,118,0.2); color: var(--down); }
+  .confidence-medium { background: rgba(255,159,67,0.2); color: var(--orange); }
+  .confidence-low { background: rgba(255,77,106,0.2); color: var(--up); }
+  
+  /* Agent状态 */
+  .agent-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .agent-card {
+    background: #0a0e27; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; text-align: center;
+  }
+  .agent-icon { font-size: 1.5rem; margin-bottom: 5px; }
+  .agent-name { font-size: 0.85rem; color: #c0c8e0; font-weight: bold; }
+  .agent-role { font-size: 0.7rem; color: #6b7b99; }
+  .agent-status { font-size: 0.7rem; margin-top: 5px; }
+  .status-online { color: var(--down); }
+  .status-busy { color: var(--orange); }
+  .status-idle { color: #6b7b99; }
+  
+  /* 图表容器 */
+  .chart-container { position: relative; height: 250px; }
+  
+  /* 风险提示 */
+  .risk-item {
+    display: flex; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .risk-icon { font-size: 1.2rem; }
+  .risk-content { flex: 1; }
+  .risk-level { font-size: 0.75rem; padding: 2px 6px; border-radius: 3px; }
+  .risk-high { background: rgba(255,77,106,0.2); color: var(--up); }
+  .risk-medium { background: rgba(255,159,67,0.2); color: var(--orange); }
+  .risk-low { background: rgba(107,123,153,0.2); color: var(--flat); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⬡ 九章量化局 · 测算中心</h1>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <div class="nav-tabs">
+      <a href="dashboard.html" class="nav-tab">📊 实时看板</a>
+      <a href="jiuzhang.html" class="nav-tab active">🧮 测算中心</a>
+      <a href="etf_monitor.html" class="nav-tab">📈 ETF监测</a>
+      <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
+      <a href="backtest.html" class="nav-tab">📉 回测验证</a>
+      <a href="history.html" class="nav-tab">📁 历史数据</a>
+    </div>
+    <div style="font-size: 0.8rem; color: #6b7b99;">
+      <span id="clock">--:--:--</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- 流程执行状态 -->
+  <div class="section-title">
+    <span class="icon">🔄</span> 九章量化局 · 流程执行状态
+  </div>
+  <div class="phase-flow" id="phase-flow">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- 核心指标 -->
+  <div class="section-title">
+    <span class="icon">📊</span> 核心指标
+  </div>
+  <div class="metric-grid" id="metrics-grid">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- Agent协同状态 -->
+  <div class="section-title">
+    <span class="icon">🤖</span> Agent协同状态
+  </div>
+  <div class="agent-grid" id="agent-grid">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- 最新预测结果 -->
+  <div class="section-title">
+    <span class="icon">🎯</span> 最新预测结果
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>📋 预测排名（校准后）</h3>
+      <table class="prediction-table" id="prediction-table">
+        <tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>🕸️ 因子得分雷达图</h3>
+      <div class="radar-container">
+        <canvas id="radar-chart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 准确率追踪 -->
+  <div class="section-title">
+    <span class="icon">📈</span> 准确率追踪
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>📊 历史准确率趋势</h3>
+      <div class="chart-container">
+        <canvas id="accuracy-chart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📉 预测误差分析</h3>
+      <div class="chart-container">
+        <canvas id="error-chart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 风险提示 -->
+  <div class="section-title">
+    <span class="icon">⚠️</span> 风险提示
+  </div>
+  <div class="card">
+    <div id="risk-list">
+      <!-- 动态填充 -->
+    </div>
+  </div>
+  
+  <!-- 复盘结论 -->
+  <div class="section-title">
+    <span class="icon">📝</span> 最新复盘结论
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>✅ 做对的</h3>
+      <div id="success-list"></div>
+    </div>
+    <div class="card">
+      <h3>❌ 需要改进</h3>
+      <div id="improve-list"></div>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+// 模拟数据（实际使用时从API获取）
+const mockData = {
+  phases: [
+    { name: 'Phase 0', agent: '系统', status: 'completed', label: '因子预检' },
+    { name: 'Phase 1', agent: '大A+老美+军机处', status: 'completed', label: '并行侦察' },
+    { name: 'Phase 2', agent: '量化1哥+数据工程师', status: 'completed', label: '深度分析' },
+    { name: 'Phase 3', agent: '因子研究员', status: 'completed', label: '交叉验证' },
+    { name: 'Phase 4', agent: '包青天', status: 'completed', label: '风控审查' },
+    { name: 'Phase 5', agent: '指挥官', status: 'completed', label: '双轨融合' }
+  ],
+  metrics: [
+    { label: '预测日期', value: '2026-06-17', change: '周二' },
+    { label: '方向准确率', value: '100%', change: '历史最佳', up: true },
+    { label: '校准系数', value: '0.6', change: '基于误差校准' },
+    { label: '市场状态', value: '震荡偏多', change: '中性偏宽松' }
+  ],
+  agents: [
+    { name: '指挥官', icon: '👑', role: '协调者', status: 'online' },
+    { name: '大A', icon: '🇨🇳', role: 'A股哨兵', status: 'online' },
+    { name: '老美', icon: '🇺🇸', role: '美股哨兵', status: 'online' },
+    { name: '军机处', icon: '🌍', role: '宏观情报', status: 'online' },
+    { name: '量化1哥', icon: '📊', role: '因子打分', status: 'online' },
+    { name: '包青天', icon: '⚖️', role: '风控审查', status: 'online' },
+    { name: '史官', icon: '📚', role: '历史记录', status: 'idle' },
+    { name: '执行者', icon: '⚡', role: '任务执行', status: 'idle' },
+    { name: '因子研究员', icon: '🔬', role: '交叉验证', status: 'online' }
+  ],
+  predictions: [
+    { rank: 1, name: '芯片ETF', pred: 2.31, confidence: '高', reason: '动量强+资金流入+双轨一致' },
+    { rank: 2, name: '人工智能ETF', pred: 2.17, confidence: '高', reason: '科技主线+政策利好' },
+    { rank: 3, name: '军工ETF', pred: 1.97, confidence: '高', reason: '地缘催化+资金流入' },
+    { rank: 4, name: '通信ETF', pred: 1.77, confidence: '中', reason: '动量延续' },
+    { rank: 5, name: '新能源ETF', pred: 1.61, confidence: '中', reason: '政策支持' },
+    { rank: 6, name: '证券ETF', pred: 1.41, confidence: '中', reason: '市场回暖' }
+  ],
+  sellSignals: [
+    { name: '创新药ETF', pred: -1.25, reason: '均值回归失败+资金流出' },
+    { name: '医药ETF', pred: -0.85, reason: '行业利空+动量转弱' }
+  ],
+  risks: [
+    { level: 'high', icon: '🔴', content: '美联储议息会议（6/17-18）：鹰派言论可能引发回调' },
+    { level: 'medium', icon: '🟡', content: '芯片ETF涨幅已大：注意回调风险' },
+    { level: 'medium', icon: '🟡', content: '地缘政治风险：关注中东局势' },
+    { level: 'low', icon: '🟢', content: '成交量萎缩：若持续萎缩，反弹可能乏力' }
+  ],
+  success: [
+    '方向判断100%准确：所有ETF涨跌方向判断正确',
+    '排名基本准确：预测前3的ETF实际涨幅也排前列',
+    '创新药ETF下跌预测准确：均值回归因子有效'
+  ],
+  improve: [
+    '预测幅度偏大：需要校准预测模型',
+    '模拟数据问题：需要接入通达信实时数据',
+    '因子权重：波动率和微观结构因子权重可降低'
+  ]
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  renderPhases();
+  renderMetrics();
+  renderAgents();
+  renderPredictions();
+  renderRisks();
+  renderConclusion();
+  renderAccuracyChart();
+  renderErrorChart();
+  renderRadarChart();
+  updateClock();
+  setInterval(updateClock, 1000);
+});
+
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN');
+}
+
+function renderPhases() {
+  const container = document.getElementById('phase-flow');
+  container.innerHTML = mockData.phases.map((phase, i) => {
+    const statusClass = phase.status === 'completed' ? 'completed' : phase.status === 'active' ? 'active' : '';
+    return `
+      ${i > 0 ? '<span class="phase-arrow">→</span>' : ''}
+      <div class="phase-step ${statusClass}">
+        <div class="phase-name">${phase.name}</div>
+        <div class="phase-agent">${phase.agent}</div>
+        <div style="font-size:0.7rem;color:#6b7b99">${phase.label}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMetrics() {
+  const grid = document.getElementById('metrics-grid');
+  grid.innerHTML = mockData.metrics.map(m => `
+    <div class="metric-card">
+      <div class="metric-value">${m.value}</div>
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-change ${m.up ? 'metric-up' : ''}">${m.change}</div>
+    </div>
+  `).join('');
+}
+
+function renderAgents() {
+  const grid = document.getElementById('agent-grid');
+  grid.innerHTML = mockData.agents.map(a => `
+    <div class="agent-card">
+      <div class="agent-icon">${a.icon}</div>
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-role">${a.role}</div>
+      <div class="agent-status status-${a.status}">
+        ${a.status === 'online' ? '● 在线' : a.status === 'busy' ? '● 繁忙' : '○ 待机'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPredictions() {
+  const table = document.getElementById('prediction-table');
+  table.innerHTML = '<tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>';
+  
+  mockData.predictions.forEach(p => {
+    const confClass = p.confidence === '高' ? 'confidence-high' : p.confidence === '中' ? 'confidence-medium' : 'confidence-low';
+    table.innerHTML += `
+      <tr>
+        <td style="color:var(--blue);font-weight:bold">${p.rank}</td>
+        <td>${p.name}</td>
+        <td class="up">+${p.pred.toFixed(2)}%</td>
+        <td><span class="confidence-badge ${confClass}">${p.confidence}</span></td>
+        <td style="font-size:0.75rem;color:#6b7b99">${p.reason}</td>
+      </tr>
+    `;
+  });
+  
+  // 卖出信号
+  if (mockData.sellSignals.length > 0) {
+    table.innerHTML += '<tr><td colspan="5" style="color:var(--up);font-weight:bold;padding-top:10px">⚠️ 卖出信号</td></tr>';
+    mockData.sellSignals.forEach(s => {
+      table.innerHTML += `
+        <tr>
+          <td>-</td>
+          <td>${s.name}</td>
+          <td class="down">${s.pred.toFixed(2)}%</td>
+          <td><span class="confidence-badge confidence-low">谨慎</span></td>
+          <td style="font-size:0.75rem;color:#6b7b99">${s.reason}</td>
+        </tr>
+      `;
+    });
+  }
+}
+
+function renderRisks() {
+  const container = document.getElementById('risk-list');
+  container.innerHTML = mockData.risks.map(r => `
+    <div class="risk-item">
+      <span class="risk-icon">${r.icon}</span>
+      <div class="risk-content">${r.content}</div>
+      <span class="risk-level risk-${r.level}">${r.level === 'high' ? '高风险' : r.level === 'medium' ? '中风险' : '低风险'}</span>
+    </div>
+  `).join('');
+}
+
+function renderConclusion() {
+  const successList = document.getElementById('success-list');
+  successList.innerHTML = mockData.success.map(s => `
+    <div style="padding:5px 0;font-size:0.85rem;">• ${s}</div>
+  `).join('');
+  
+  const improveList = document.getElementById('improve-list');
+  improveList.innerHTML = mockData.improve.map(i => `
+    <div style="padding:5px 0;font-size:0.85rem;">• ${i}</div>
+  `).join('');
+}
+
+function renderAccuracyChart() {
+  new Chart(document.getElementById('accuracy-chart'), {
+    type: 'line',
+    data: {
+      labels: ['6/12', '6/15', '6/16', '6/17'],
+      datasets: [{
+        label: '方向准确率(%)',
+        data: [33, 50, 100, null],
+        borderColor: '#4a6cf5',
+        backgroundColor: 'rgba(74,108,245,0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } },
+        y: { min: 0, max: 100, ticks: { color: '#6b7b99', callback: v => v + '%' }, grid: { color: '#1e264a' } }
+      }
+    }
+  });
+}
+
+function renderErrorChart() {
+  new Chart(document.getElementById('error-chart'), {
+    type: 'bar',
+    data: {
+      labels: ['科创50', '通信', '半导体', '机器人', '新能源', '创新药'],
+      datasets: [{
+        label: '预测误差(%)',
+        data: [4.41, 4.26, 4.33, 1.26, 0.33, 1.21],
+        backgroundColor: [
+          'rgba(255,77,106,0.7)', 'rgba(255,77,106,0.7)', 'rgba(255,77,106,0.7)',
+          'rgba(255,159,67,0.7)', 'rgba(0,230,118,0.7)', 'rgba(255,159,67,0.7)'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7b99' }, grid: { display: false } },
+        y: { ticks: { color: '#6b7b99', callback: v => v + '%' }, grid: { color: '#1e264a' } }
+      }
+    }
+  });
+}
+
+function renderRadarChart() {
+  new Chart(document.getElementById('radar-chart'), {
+    type: 'radar',
+    data: {
+      labels: ['动量', '资金流', '均值回归', '波动率', '微观结构', '市场状态'],
+      datasets: [
+        {
+          label: '芯片ETF',
+          data: [88, 85, 52, 65, 75, 85],
+          borderColor: '#4a6cf5',
+          backgroundColor: 'rgba(74,108,245,0.2)'
+        },
+        {
+          label: '人工智能ETF',
+          data: [85, 82, 48, 60, 70, 85],
+          borderColor: '#00d4ff',
+          backgroundColor: 'rgba(0,212,255,0.2)'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#6b7b99' } } },
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { color: '#6b7b99', backdropColor: 'transparent', stepSize: 20 },
+          grid: { color: '#1e264a' },
+          pointLabels: { color: '#c0c8e0' },
+          angleLines: { color: '#1e264a' }
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
