@@ -19,6 +19,13 @@ import backtest
 # 导入数据导入模块
 from data_importer import importer
 
+# 导入ETF数据模块
+from etf_data import (
+    generate_mock_etf_data, calculate_rankings, get_watchlist_data,
+    add_to_watchlist, remove_from_watchlist, get_etf_detail,
+    get_sector_etfs, load_watchlist
+)
+
 # 配置
 PORT = 7860
 BIND_ADDR = "0.0.0.0"
@@ -258,6 +265,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             html = (DATA_DIR / "backtest.html").read_bytes()
             self.wfile.write(html)
 
+        # ETF监测页面
+        elif path == "/etf_monitor.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            html = (DATA_DIR / "etf_monitor.html").read_bytes()
+            self.wfile.write(html)
+
         # API: 实时数据
         elif path == "/api/data":
             self.send_response(200)
@@ -391,6 +406,79 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             data = run_backtest_simulation(self)
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+        # API: ETF排名
+        elif path == "/api/etf/rankings":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            # 获取查询参数
+            params = {}
+            if "?" in self.path:
+                query = self.path.split("?")[1]
+                for pair in query.split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        params[k] = v
+            market = params.get('market', 'all')
+            sort_by = params.get('sort', 'change_pct')
+            top_n = int(params.get('top', '50'))
+            data = generate_mock_etf_data()
+            rankings = calculate_rankings(data, sort_by, top_n)
+            self.wfile.write(json.dumps(rankings, ensure_ascii=False).encode("utf-8"))
+
+        # API: 自选ETF
+        elif path == "/api/etf/watchlist":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            data = get_watchlist_data()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+        # API: ETF详情
+        elif path.startswith("/api/etf/detail/"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            code = path.split("/")[-1]
+            data = get_etf_detail(code)
+            self.wfile.write(json.dumps(data or {}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 行业ETF分类
+        elif path == "/api/etf/sectors":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            data = get_sector_etfs()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+        # API: 添加自选
+        elif path == "/api/etf/watchlist/add" and self.command == "POST":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            body_json = json.loads(body)
+            code = body_json.get('code', '')
+            market = body_json.get('market', 'a_share')
+            result = add_to_watchlist(code, market)
+            self.wfile.write(json.dumps({"success": True, "watchlist": result}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 移除自选
+        elif path == "/api/etf/watchlist/remove" and self.command == "POST":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            body_json = json.loads(body)
+            code = body_json.get('code', '')
+            market = body_json.get('market', 'a_share')
+            result = remove_from_watchlist(code, market)
+            self.wfile.write(json.dumps({"success": True, "watchlist": result}, ensure_ascii=False).encode("utf-8"))
 
         # 访问日志
         elif path == "/log":

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETF监测中心 - 九章量化局</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #0a0e27;
+    color: #e0e6ff;
+    min-height: 100vh;
+  }
+  :root {
+    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
+    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
+    --orange: #ff9f43; --pink: #ff6b9d;
+    --bg-card: #121630; --border: #1e264a;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
+  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
+  .nav-tab {
+    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    text-decoration: none; transition: all 0.3s;
+  }
+  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
+  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
+
+  .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+  
+  .section-title {
+    font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .icon { font-size: 1.3rem; }
+  
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; transition: border-color 0.3s;
+  }
+  .card:hover { border-color: var(--blue); }
+  .card h3 {
+    font-size: 0.85rem; color: #6b7b99; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  
+  /* ETF表格 */
+  .etf-table {
+    width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  }
+  .etf-table th {
+    background: #1a1f4a; color: #6b7b99; padding: 10px 8px;
+    text-align: left; border-bottom: 2px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  .etf-table th:hover { color: var(--cyan); }
+  .etf-table td {
+    padding: 8px; border-bottom: 1px solid var(--border);
+  }
+  .etf-table tr:hover { background: #1a1f4a33; }
+  .etf-table .rank { color: var(--blue); font-weight: bold; }
+  .etf-table .up { color: var(--up); }
+  .etf-table .down { color: var(--down); }
+  .etf-table .code { font-family: 'Courier New', monospace; }
+  
+  /* 指标卡片 */
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;
+  }
+  .metric-card {
+    background: linear-gradient(135deg, #1a1f4a 0%, #121630 100%);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .metric-value { font-size: 1.8rem; font-weight: bold; color: var(--cyan); }
+  .metric-label { font-size: 0.75rem; color: #6b7b99; margin-top: 4px; }
+  .metric-change { font-size: 0.8rem; margin-top: 6px; }
+  .metric-up { color: var(--up); }
+  .metric-down { color: var(--down); }
+  
+  /* 筛选器 */
+  .filter-bar {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    transition: all 0.3s;
+  }
+  .filter-btn:hover { background: #2a3f6a; color: #7b9cff; }
+  .filter-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+  
+  .search-input {
+    padding: 6px 12px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; color: #c0c8e0; font-size: 0.8rem; width: 200px;
+  }
+  .search-input:focus { outline: none; border-color: var(--blue); }
+  
+  /* 自选按钮 */
+  .watchlist-btn {
+    padding: 4px 8px; background: transparent; border: 1px solid var(--orange);
+    border-radius: 4px; cursor: pointer; font-size: 0.7rem; color: var(--orange);
+    transition: all 0.3s;
+  }
+  .watchlist-btn:hover { background: var(--orange); color: #0a0e27; }
+  .watchlist-btn.active { background: var(--orange); color: #0a0e27; }
+  
+  /* 图表容器 */
+  .chart-container { position: relative; height: 300px; }
+  .chart-container.small { height: 200px; }
+  
+  /* 标签页 */
+  .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+  .tab {
+    padding: 6px 12px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    transition: all 0.3s;
+  }
+  .tab:hover { background: #2a3f6a; color: #7b9cff; }
+  .tab.active { background: var(--blue); color: white; border-color: var(--blue); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⬡ 九章量化局 · ETF监测中心</h1>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <div class="nav-tabs">
+      <a href="dashboard.html" class="nav-tab">📊 预测看板</a>
+      <a href="lobster_collab.html" class="nav-tab">🦞 龙虾协同</a>
+      <a href="backtest.html" class="nav-tab">📈 回测验证</a>
+      <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
+      <a href="history.html" class="nav-tab">📁 历史数据</a>
+      <a href="etf_monitor.html" class="nav-tab active">📊 ETF监测</a>
+    </div>
+    <div style="font-size: 0.8rem; color: #6b7b99;">
+      <span id="clock">--:--:--</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- 核心指标 -->
+  <div class="section-title">
+    <span class="icon">📊</span> 市场概览
+  </div>
+  <div class="metric-grid" id="metrics-grid">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- 筛选器 -->
+  <div class="filter-bar">
+    <input type="text" class="search-input" id="search-input" placeholder="搜索ETF代码或名称...">
+    <button class="filter-btn active" data-market="all" onclick="filterMarket('all')">全部</button>
+    <button class="filter-btn" data-market="a_share" onclick="filterMarket('a_share')">A股</button>
+    <button class="filter-btn" data-market="us" onclick="filterMarket('us')">美股</button>
+    <button class="filter-btn" data-market="watchlist" onclick="filterMarket('watchlist')">⭐ 自选</button>
+    <div style="margin-left: auto;">
+      <select id="sort-select" onchange="sortETFs()" style="padding: 6px 12px; background: #1a1f4a; border: 1px solid #2a3f6a; border-radius: 5px; color: #c0c8e0; font-size: 0.8rem;">
+        <option value="change_pct">涨跌幅排序</option>
+        <option value="volume">成交量排序</option>
+        <option value="amount">成交额排序</option>
+        <option value="turnover_rate">换手率排序</option>
+      </select>
+    </div>
+  </div>
+  
+  <!-- 自选ETF榜单 -->
+  <div class="section-title">
+    <span class="icon">⭐</span> 自选ETF榜单
+  </div>
+  <div class="grid grid-2" style="margin-bottom: 20px;">
+    <div class="card">
+      <h3>A股自选</h3>
+      <table class="etf-table">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>代码</th>
+            <th>名称</th>
+            <th>最新价</th>
+            <th>涨跌幅</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="watchlist-a-share">
+          <!-- 动态填充 -->
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>美股/海外自选</h3>
+      <table class="etf-table">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>代码</th>
+            <th>名称</th>
+            <th>最新价</th>
+            <th>涨跌幅</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="watchlist-us">
+          <!-- 动态填充 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- ETF动态排名 -->
+  <div class="section-title">
+    <span class="icon">🏆</span> ETF动态排名
+  </div>
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('all')">全部ETF</button>
+      <button class="tab" onclick="switchTab('top_gainers')">涨幅榜</button>
+      <button class="tab" onclick="switchTab('top_losers')">跌幅榜</button>
+      <button class="tab" onclick="switchTab('active')">活跃榜</button>
+    </div>
+    <table class="etf-table">
+      <thead>
+        <tr>
+          <th>排名</th>
+          <th>代码</th>
+          <th>名称</th>
+          <th>最新价</th>
+          <th>涨跌幅</th>
+          <th>成交量</th>
+          <th>成交额</th>
+          <th>换手率</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="etf-rankings">
+        <!-- 动态填充 -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- 多维度图表 -->
+  <div class="section-title">
+    <span class="icon">📈</span> 多维度分析
+  </div>
+  <div class="grid grid-2" style="margin-bottom: 20px;">
+    <div class="card">
+      <h3>行业涨跌幅分布</h3>
+      <div class="chart-container">
+        <canvas id="sectorChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>涨跌幅分布直方图</h3>
+      <div class="chart-container">
+        <canvas id="histogramChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="grid grid-2" style="margin-bottom: 20px;">
+    <div class="card">
+      <h3>成交额TOP10</h3>
+      <div class="chart-container">
+        <canvas id="amountChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>换手率TOP10</h3>
+      <div class="chart-container">
+        <canvas id="turnoverChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="grid grid-2" style="margin-bottom: 20px;">
+    <div class="card">
+      <h3>行业资金流向</h3>
+      <div class="chart-container">
+        <canvas id="flowChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>市场情绪指标</h3>
+      <div class="chart-container">
+        <canvas id="sentimentChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+// 全局变量
+let allETFs = [];
+let watchlistData = { a_share: [], us: [] };
+let currentFilter = 'all';
+let currentSort = 'change_pct';
+let charts = {};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  loadData();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(loadData, 30000); // 30秒刷新
+});
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN');
+}
+
+async function loadData() {
+  try {
+    // 加载ETF排名
+    const rankingsRes = await fetch('/api/etf/rankings?market=all&sort=change_pct&top=100');
+    allETFs = await rankingsRes.json();
+    
+    // 加载自选数据
+    const watchlistRes = await fetch('/api/etf/watchlist');
+    watchlistData = await watchlistRes.json();
+    
+    // 渲染
+    renderMetrics();
+    renderWatchlist();
+    renderRankings();
+    renderCharts();
+  } catch (err) {
+    console.error('加载数据失败:', err);
+  }
+}
+
+function renderMetrics() {
+  const grid = document.getElementById('metrics-grid');
+  const total = allETFs.length;
+  const upCount = allETFs.filter(e => e.change_pct > 0).length;
+  const downCount = allETFs.filter(e => e.change_pct < 0).length;
+  const avgChange = allETFs.reduce((sum, e) => sum + e.change_pct, 0) / total;
+  
+  grid.innerHTML = `
+    <div class="metric-card">
+      <div class="metric-value">${total}</div>
+      <div class="metric-label">监测ETF总数</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" style="color: var(--up);">${upCount}</div>
+      <div class="metric-label">上涨数量</div>
+      <div class="metric-change metric-up">${(upCount/total*100).toFixed(1)}%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" style="color: var(--down);">${downCount}</div>
+      <div class="metric-label">下跌数量</div>
+      <div class="metric-change metric-down">${(downCount/total*100).toFixed(1)}%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value ${avgChange >= 0 ? 'metric-up' : 'metric-down'}">${avgChange >= 0 ? '+' : ''}${avgChange.toFixed(2)}%</div>
+      <div class="metric-label">平均涨跌幅</div>
+    </div>
+  `;
+}
+
+function renderWatchlist() {
+  // A股自选
+  const aShareBody = document.getElementById('watchlist-a-share');
+  aShareBody.innerHTML = watchlistData.a_share.map((etf, i) => `
+    <tr>
+      <td class="rank">${i + 1}</td>
+      <td class="code">${etf.code}</td>
+      <td>${etf.name}</td>
+      <td>${etf.price.toFixed(3)}</td>
+      <td class="${etf.change_pct >= 0 ? 'up' : 'down'}">${etf.change_pct >= 0 ? '+' : ''}${etf.change_pct.toFixed(2)}%</td>
+      <td><button class="watchlist-btn active" onclick="removeWatchlist('${etf.code}', 'a_share')">取消</button></td>
+    </tr>
+  `).join('');
+  
+  // 美股自选
+  const usBody = document.getElementById('watchlist-us');
+  usBody.innerHTML = watchlistData.us.map((etf, i) => `
+    <tr>
+      <td class="rank">${i + 1}</td>
+      <td class="code">${etf.code}</td>
+      <td>${etf.name}</td>
+      <td>${etf.price.toFixed(3)}</td>
+      <td class="${etf.change_pct >= 0 ? 'up' : 'down'}">${etf.change_pct >= 0 ? '+' : ''}${etf.change_pct.toFixed(2)}%</td>
+      <td><button class="watchlist-btn active" onclick="removeWatchlist('${etf.code}', 'us')">取消</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderRankings() {
+  let filtered = [...allETFs];
+  
+  // 筛选
+  if (currentFilter === 'a_share') {
+    filtered = filtered.filter(e => e.market === 'SH' || e.market === 'SZ');
+  } else if (currentFilter === 'us') {
+    filtered = filtered.filter(e => e.market !== 'SH' && e.market !== 'SZ');
+  } else if (currentFilter === 'watchlist') {
+    const watchlistCodes = [...watchlistData.a_share.map(e => e.code), ...watchlistData.us.map(e => e.code)];
+    filtered = filtered.filter(e => watchlistCodes.includes(e.code));
+  }
+  
+  // 搜索
+  const search = document.getElementById('search-input').value.toLowerCase();
+  if (search) {
+    filtered = filtered.filter(e => e.code.includes(search) || e.name.toLowerCase().includes(search));
+  }
+  
+  // 排序
+  const sortField = document.getElementById('sort-select').value;
+  filtered.sort((a, b) => b[sortField] - a[sortField]);
+  
+  // 渲染
+  const body = document.getElementById('etf-rankings');
+  body.innerHTML = filtered.slice(0, 50).map((etf, i) => {
+    const isWatchlist = watchlistData.a_share.some(w => w.code === etf.code) || 
+                       watchlistData.us.some(w => w.code === etf.code);
+    return `
+      <tr>
+        <td class="rank">${i + 1}</td>
+        <td class="code">${etf.code}</td>
+        <td>${etf.name}</td>
+        <td>${etf.price.toFixed(3)}</td>
+        <td class="${etf.change_pct >= 0 ? 'up' : 'down'}">${etf.change_pct >= 0 ? '+' : ''}${etf.change_pct.toFixed(2)}%</td>
+        <td>${(etf.volume / 10000).toFixed(0)}万</td>
+        <td>${(etf.amount / 100000000).toFixed(2)}亿</td>
+        <td>${etf.turnover_rate.toFixed(2)}%</td>
+        <td>
+          <button class="watchlist-btn ${isWatchlist ? 'active' : ''}" 
+                  onclick="toggleWatchlist('${etf.code}', '${etf.market}')">
+            ${isWatchlist ? '取消' : '自选'}
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderCharts() {
+  // 行业涨跌幅分布
+  renderSectorChart();
+  // 涨跌幅分布直方图
+  renderHistogramChart();
+  // 成交额TOP10
+  renderAmountChart();
+  // 换手率TOP10
+  renderTurnoverChart();
+  // 行业资金流向
+  renderFlowChart();
+  // 市场情绪
+  renderSentimentChart();
+}
+
+function renderSectorChart() {
+  const sectors = {};
+  allETFs.forEach(etf => {
+    const sector = getSector(etf.name);
+    if (!sectors[sector]) sectors[sector] = [];
+    sectors[sector].push(etf.change_pct);
+  });
+  
+  const labels = Object.keys(sectors);
+  const data = labels.map(s => {
+    const values = sectors[s];
+    return values.reduce((sum, v) => sum + v, 0) / values.length;
+  });
+  
+  if (charts.sector) charts.sector.destroy();
+  charts.sector = new Chart(document.getElementById('sectorChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '平均涨跌幅',
+        data: data,
+        backgroundColor: data.map(v => v >= 0 ? 'rgba(255,77,106,0.7)' : 'rgba(0,230,118,0.7)'),
+        borderColor: data.map(v => v >= 0 ? '#ff4d6a' : '#00e676'),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7b99', font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } }
+      }
+    }
+  });
+}
+
+function renderHistogramChart() {
+  const ranges = ['-5以下', '-5~-3', '-3~-1', '-1~0', '0~1', '1~3', '3~5', '5以上'];
+  const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+  
+  allETFs.forEach(etf => {
+    const v = etf.change_pct;
+    if (v < -5) counts[0]++;
+    else if (v < -3) counts[1]++;
+    else if (v < -1) counts[2]++;
+    else if (v < 0) counts[3]++;
+    else if (v < 1) counts[4]++;
+    else if (v < 3) counts[5]++;
+    else if (v < 5) counts[6]++;
+    else counts[7]++;
+  });
+  
+  if (charts.histogram) charts.histogram.destroy();
+  charts.histogram = new Chart(document.getElementById('histogramChart'), {
+    type: 'bar',
+    data: {
+      labels: ranges,
+      datasets: [{
+        label: 'ETF数量',
+        data: counts,
+        backgroundColor: ranges.map((_, i) => i < 4 ? 'rgba(0,230,118,0.7)' : 'rgba(255,77,106,0.7)'),
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7b99' }, grid: { display: false } },
+        y: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } }
+      }
+    }
+  });
+}
+
+function renderAmountChart() {
+  const top10 = [...allETFs].sort((a, b) => b.amount - a.amount).slice(0, 10);
+  
+  if (charts.amount) charts.amount.destroy();
+  charts.amount = new Chart(document.getElementById('amountChart'), {
+    type: 'bar',
+    data: {
+      labels: top10.map(e => e.name),
+      datasets: [{
+        label: '成交额(亿)',
+        data: top10.map(e => (e.amount / 100000000).toFixed(2)),
+        backgroundColor: 'rgba(74,108,245,0.7)',
+        borderColor: '#4a6cf5',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } },
+        y: { ticks: { color: '#6b7b99', font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderTurnoverChart() {
+  const top10 = [...allETFs].sort((a, b) => b.turnover_rate - a.turnover_rate).slice(0, 10);
+  
+  if (charts.turnover) charts.turnover.destroy();
+  charts.turnover = new Chart(document.getElementById('turnoverChart'), {
+    type: 'bar',
+    data: {
+      labels: top10.map(e => e.name),
+      datasets: [{
+        label: '换手率(%)',
+        data: top10.map(e => e.turnover_rate.toFixed(2)),
+        backgroundColor: 'rgba(0,212,255,0.7)',
+        borderColor: '#00d4ff',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7b99' }, grid: { color: '#1e264a' } },
+        y: { ticks: { color: '#6b7b99', font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderFlowChart() {
+  const sectors = {};
+  allETFs.forEach(etf => {
+    const sector = getSector(etf.name);
+    if (!sectors[sector]) sectors[sector] = 0;
+    sectors[sector] += etf.amount;
+  });
+  
+  const labels = Object.keys(sectors);
+  const data = labels.map(s => (sectors[s] / 100000000).toFixed(2));
+  
+  if (charts.flow) charts.flow.destroy();
+  charts.flow = new Chart(document.getElementById('flowChart'), {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: [
+          '#4a6cf5', '#00d4ff', '#a855f7', '#ff9f43', '#ff6b9d',
+          '#00e676', '#ff4d6a', '#6b7b99'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#6b7b99', font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderSentimentChart() {
+  const upCount = allETFs.filter(e => e.change_pct > 0).length;
+  const downCount = allETFs.filter(e => e.change_pct < 0).length;
+  const flatCount = allETFs.filter(e => e.change_pct === 0).length;
+  
+  if (charts.sentiment) charts.sentiment.destroy();
+  charts.sentiment = new Chart(document.getElementById('sentimentChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['上涨', '下跌', '平盘'],
+      datasets: [{
+        data: [upCount, downCount, flatCount],
+        backgroundColor: ['#ff4d6a', '#00e676', '#6b7b99'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#6b7b99', padding: 15 } }
+      }
+    }
+  });
+}
+
+function getSector(name) {
+  if (name.includes('半导体') || name.includes('芯片') || name.includes('AI') || name.includes('人工智能')) return '科技';
+  if (name.includes('新能源') || name.includes('光伏') || name.includes('锂电')) return '新能源';
+  if (name.includes('医药') || name.includes('创新药') || name.includes('医疗')) return '医药';
+  if (name.includes('消费') || name.includes('食品') || name.includes('家电')) return '消费';
+  if (name.includes('银行') || name.includes('证券') || name.includes('金融')) return '金融';
+  if (name.includes('军工') || name.includes('国防')) return '军工';
+  if (name.includes('地产') || name.includes('房地产')) return '地产';
+  return '其他';
+}
+
+function filterMarket(market) {
+  currentFilter = market;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.market === market);
+  });
+  renderRankings();
+}
+
+function sortETFs() {
+  renderRankings();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  if (tab === 'top_gainers') {
+    allETFs.sort((a, b) => b.change_pct - a.change_pct);
+  } else if (tab === 'top_losers') {
+    allETFs.sort((a, b) => a.change_pct - b.change_pct);
+  } else if (tab === 'active') {
+    allETFs.sort((a, b) => b.turnover_rate - a.turnover_rate);
+  }
+  renderRankings();
+}
+
+async function toggleWatchlist(code, market) {
+  const isWatchlist = watchlistData.a_share.some(w => w.code === code) || 
+                     watchlistData.us.some(w => w.code === code);
+  
+  if (isWatchlist) {
+    await removeWatchlist(code, market === 'SH' || market === 'SZ' ? 'a_share' : 'us');
+  } else {
+    await addWatchlist(code, market === 'SH' || market === 'SZ' ? 'a_share' : 'us');
+  }
+}
+
+async function addWatchlist(code, market) {
+  try {
+    await fetch('/api/etf/watchlist/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, market })
+    });
+    loadData();
+  } catch (err) {
+    console.error('添加自选失败:', err);
+  }
+}
+
+async function removeWatchlist(code, market) {
+  try {
+    await fetch('/api/etf/watchlist/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, market })
+    });
+    loadData();
+  } catch (err) {
+    console.error('移除自选失败:', err);
+  }
+}
+
+// 搜索事件
+document.getElementById('search-input').addEventListener('input', renderRankings);
+</script>
+</body>
+</html>

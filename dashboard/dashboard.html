@@ -123,6 +123,7 @@
       <a href="backtest.html" class="nav-tab">📈 回测验证</a>
       <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
       <a href="history.html" class="nav-tab">📁 历史数据</a>
+      <a href="etf_monitor.html" class="nav-tab">📊 ETF监测</a>
     </div>
     <div class="right">
       <span><span class="dot ok" id="dot-c"></span><span id="conn">已连接</span></span>
@@ -200,7 +201,36 @@
     <div class="advice" id="advice">等待数据...</div>
   </div>
 
-  <!-- ========== Row 5: 全量数据表 + 因子趋势 ========== -->
+  <!-- ========== Row 5: 自选ETF榜单 ========== -->
+
+  <div class="card c4">
+    <h2>⭐ 自选ETF榜单</h2>
+    <div style="display: flex; gap: 20px;">
+      <div style="flex: 1;">
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">A股自选</h3>
+        <table class="flt" id="watchlist-a-share"></table>
+      </div>
+      <div style="flex: 1;">
+        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">美股/海外自选</h3>
+        <table class="flt" id="watchlist-us"></table>
+      </div>
+    </div>
+    <div style="margin-top: 10px; text-align: right;">
+      <a href="etf_monitor.html" style="color: var(--cyan); font-size: 0.8rem; text-decoration: none;">📊 查看完整ETF监测中心 →</a>
+    </div>
+  </div>
+
+  <!-- ========== Row 6: ETF动态排名 ========== -->
+
+  <div class="card c4">
+    <h2>🏆 ETF动态排名（涨幅TOP10）</h2>
+    <table class="flt" id="etf-rankings"></table>
+    <div style="margin-top: 10px; text-align: right;">
+      <a href="etf_monitor.html" style="color: var(--cyan); font-size: 0.8rem; text-decoration: none;">📊 查看完整排名 →</a>
+    </div>
+  </div>
+
+  <!-- ========== Row 7: 全量数据表 + 因子趋势 ========== -->
 
   <div class="card c4">
     <h2>📋 ETF全量数据表 · 双轨对比</h2>
@@ -574,12 +604,78 @@ function tickClock() {
     new Date().toLocaleTimeString('zh-CN', {hour12: false});
 }
 
+// ── 加载自选ETF数据 ──
+async function loadWatchlist() {
+  try {
+    const r = await fetch('/api/etf/watchlist?t=' + Date.now());
+    if (r.ok) {
+      const data = await r.json();
+      renderWatchlistTable('watchlist-a-share', data.a_share || []);
+      renderWatchlistTable('watchlist-us', data.us || []);
+    }
+  } catch(e) {
+    console.error('加载自选失败:', e);
+  }
+}
+
+function renderWatchlistTable(tableId, etfs) {
+  const tbl = document.getElementById(tableId);
+  tbl.innerHTML = '<tr><th>#</th><th>代码</th><th>名称</th><th>最新价</th><th>涨跌幅</th></tr>';
+  etfs.forEach((etf, i) => {
+    const cls = etf.change_pct >= 0 ? 'up' : 'down';
+    const sign = etf.change_pct >= 0 ? '+' : '';
+    tbl.innerHTML += `<tr>
+      <td style="color:var(--blue)">${i+1}</td>
+      <td style="color:var(--blue)">${etf.code}</td>
+      <td>${etf.name}</td>
+      <td style="font-family:monospace">${etf.price.toFixed(3)}</td>
+      <td class="${cls}">${sign}${etf.change_pct.toFixed(2)}%</td>
+    </tr>`;
+  });
+}
+
+// ── 加载ETF排名数据 ──
+async function loadRankings() {
+  try {
+    const r = await fetch('/api/etf/rankings?market=all&sort=change_pct&top=10&t=' + Date.now());
+    if (r.ok) {
+      const data = await r.json();
+      renderRankingsTable(data);
+    }
+  } catch(e) {
+    console.error('加载排名失败:', e);
+  }
+}
+
+function renderRankingsTable(etfs) {
+  const tbl = document.getElementById('etf-rankings');
+  tbl.innerHTML = '<tr><th>#</th><th>代码</th><th>名称</th><th>最新价</th><th>涨跌幅</th><th>成交量</th><th>成交额</th><th>换手率</th></tr>';
+  etfs.forEach((etf, i) => {
+    const cls = etf.change_pct >= 0 ? 'up' : 'down';
+    const sign = etf.change_pct >= 0 ? '+' : '';
+    tbl.innerHTML += `<tr>
+      <td style="color:var(--blue)">${i+1}</td>
+      <td style="color:var(--blue)">${etf.code}</td>
+      <td>${etf.name}</td>
+      <td style="font-family:monospace">${etf.price.toFixed(3)}</td>
+      <td class="${cls}">${sign}${etf.change_pct.toFixed(2)}%</td>
+      <td>${(etf.volume / 10000).toFixed(0)}万</td>
+      <td>${(etf.amount / 100000000).toFixed(2)}亿</td>
+      <td>${etf.turnover_rate.toFixed(2)}%</td>
+    </tr>`;
+  });
+}
+
 // ── 启动 ──
 initCharts();
 tickClock();
 setInterval(tickClock, 1000);
 fetchData();
+loadWatchlist();
+loadRankings();
 setInterval(fetchData, 15000);
+setInterval(loadWatchlist, 30000);
+setInterval(loadRankings, 30000);
 </script>
 </body>
 </html>
