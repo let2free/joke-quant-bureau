@@ -234,6 +234,30 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             html = (DATA_DIR / "lobster_collab.html").read_bytes()
             self.wfile.write(html)
 
+        # 拓扑分析页面
+        elif path == "/topology.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            html = (DATA_DIR / "topology.html").read_bytes()
+            self.wfile.write(html)
+
+        # 历史数据页面
+        elif path == "/history.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            html = (DATA_DIR / "history.html").read_bytes()
+            self.wfile.write(html)
+
+        # 回测页面
+        elif path == "/backtest.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            html = (DATA_DIR / "backtest.html").read_bytes()
+            self.wfile.write(html)
+
         # API: 实时数据
         elif path == "/api/data":
             self.send_response(200)
