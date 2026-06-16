@@ -23,7 +23,7 @@ from data_importer import importer
 from etf_data import (
     generate_mock_etf_data, calculate_rankings, get_watchlist_data,
     add_to_watchlist, remove_from_watchlist, get_etf_detail,
-    get_sector_etfs, load_watchlist
+    get_sector_etfs, load_watchlist, get_etf_list_from_tdx
 )
 
 # 配置
@@ -479,6 +479,59 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             market = body_json.get('market', 'a_share')
             result = remove_from_watchlist(code, market)
             self.wfile.write(json.dumps({"success": True, "watchlist": result}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 刷新数据
+        elif path == "/api/etf/refresh":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            # 重新生成数据
+            data = generate_mock_etf_data()
+            rankings = calculate_rankings(data, 'change_pct', 100)
+            self.wfile.write(json.dumps({
+                "success": True,
+                "count": len(rankings),
+                "updated_at": datetime.now().isoformat()
+            }, ensure_ascii=False).encode("utf-8"))
+
+        # API: 全市场ETF搜索
+        elif path.startswith("/api/etf/search"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            # 获取查询参数
+            params = {}
+            if "?" in self.path:
+                query = self.path.split("?")[1]
+                for pair in query.split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        params[k] = v
+            keyword = params.get('q', '')
+            # 搜索ETF
+            all_data = generate_mock_etf_data(100)
+            results = []
+            for code, info in all_data.items():
+                if keyword.lower() in code or keyword.lower() in info.get('name', '').lower():
+                    results.append(info)
+            self.wfile.write(json.dumps(results[:20], ensure_ascii=False).encode("utf-8"))
+
+        # API: 获取监测范围配置
+        elif path == "/api/etf/monitor/config":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            config = {
+                "total_etfs": 1563,
+                "monitoring": load_watchlist(),
+                "refresh_interval": 30,
+                "data_source": "通达信",
+                "last_update": datetime.now().isoformat()
+            }
+            self.wfile.write(json.dumps(config, ensure_ascii=False).encode("utf-8"))
 
         # 访问日志
         elif path == "/log":

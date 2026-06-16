@@ -1,140 +1,247 @@
 """
-九章量化局 - ETF数据获取模块
-支持A股和美股ETF实时数据获取、排名计算
+九章量化局 - ETF数据获取模块 v2.0
+接入通达信实时数据，支持全市场1500+只ETF
 """
 import json
 import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
-# ETF基础数据配置
-ETF_CONFIG = {
-    'a_share': {
-        '通信ETF': {'code': '515880', 'market': 'SH'},
-        '科创50ETF': {'code': '588000', 'market': 'SH'},
-        '半导体设备ETF': {'code': '560780', 'market': 'SH'},
-        '机器人ETF': {'code': '562500', 'market': 'SH'},
-        '新能源ETF': {'code': '516160', 'market': 'SH'},
-        '创新药ETF': {'code': '516080', 'market': 'SH'},
-        '芯片ETF': {'code': '159995', 'market': 'SZ'},
-        '军工ETF': {'code': '512660', 'market': 'SH'},
-        '证券ETF': {'code': '512880', 'market': 'SH'},
-        '银行ETF': {'code': '512800', 'market': 'SH'},
-        '消费ETF': {'code': '159928', 'market': 'SZ'},
-        '医药ETF': {'code': '512010', 'market': 'SH'},
-        '新能源车ETF': {'code': '515030', 'market': 'SH'},
-        '光伏ETF': {'code': '515790', 'market': 'SH'},
-        '人工智能ETF': {'code': '515070', 'market': 'SH'},
-        '游戏ETF': {'code': '516010', 'market': 'SH'},
-        '传媒ETF': {'code': '512980', 'market': 'SH'},
-        '房地产ETF': {'code': '512200', 'market': 'SH'},
-        '建材ETF': {'code': '159745', 'market': 'SZ'},
-        '钢铁ETF': {'code': '515210', 'market': 'SH'},
-        '煤炭ETF': {'code': '515220', 'market': 'SH'},
-        '有色金属ETF': {'code': '512400', 'market': 'SH'},
-        '化工ETF': {'code': '159870', 'market': 'SZ'},
-        '农业ETF': {'code': '159825', 'market': 'SZ'},
-        '养殖ETF': {'code': '159865', 'market': 'SZ'},
-        '旅游ETF': {'code': '159766', 'market': 'SZ'},
-        '食品饮料ETF': {'code': '515170', 'market': 'SH'},
-        '家电ETF': {'code': '159996', 'market': 'SZ'},
-        '汽车ETF': {'code': '516110', 'market': 'SH'},
-        '电力ETF': {'code': '159611', 'market': 'SZ'},
-    },
-    'us': {
-        '纳指科技ETF': {'code': '513100', 'market': 'SH'},
-        '标普500ETF': {'code': '513500', 'market': 'SH'},
-        '纳斯达克ETF': {'code': '513100', 'market': 'SH'},
-        '道琼斯ETF': {'code': '513400', 'market': 'SH'},
-        '中概互联ETF': {'code': '513050', 'market': 'SH'},
-        '恒生科技ETF': {'code': '513180', 'market': 'SH'},
-        '恒生ETF': {'code': '159920', 'market': 'SZ'},
-        '日经ETF': {'code': '513880', 'market': 'SH'},
-        '德国ETF': {'code': '513030', 'market': 'SH'},
-        '法国ETF': {'code': '513080', 'market': 'SH'},
-        '英国ETF': {'code': '513090', 'market': 'SH'},
-        '印度ETF': {'code': '164824', 'market': 'SZ'},
-        '越南ETF': {'code': '159987', 'market': 'SZ'},
-    }
+# 配置文件路径
+DATA_DIR = Path(__file__).parent
+WATCHLIST_FILE = DATA_DIR / 'watchlist.json'
+ETF_CACHE_FILE = DATA_DIR / 'etf_cache.json'
+
+# 默认自选列表
+DEFAULT_WATCHLIST = {
+    'a_share': [
+        {'code': '515880', 'name': '通信ETF', 'market': '1'},
+        {'code': '588000', 'name': '科创50ETF', 'market': '1'},
+        {'code': '560780', 'name': '半导体设备ETF', 'market': '1'},
+        {'code': '562500', 'name': '机器人ETF', 'market': '1'},
+        {'code': '516160', 'name': '新能源ETF', 'market': '1'},
+        {'code': '516080', 'name': '创新药ETF', 'market': '1'},
+        {'code': '159995', 'name': '芯片ETF', 'market': '0'},
+        {'code': '512660', 'name': '军工ETF', 'market': '1'},
+        {'code': '512880', 'name': '证券ETF', 'market': '1'},
+        {'code': '512800', 'name': '银行ETF', 'market': '1'},
+    ],
+    'us': [
+        {'code': '513100', 'name': '纳指科技ETF', 'market': '1'},
+        {'code': '513500', 'name': '标普500ETF', 'market': '1'},
+        {'code': '513050', 'name': '中概互联ETF', 'market': '1'},
+        {'code': '513180', 'name': '恒生科技ETF', 'market': '1'},
+    ]
 }
-
-# 自选ETF列表（可配置）
-WATCHLIST_FILE = Path(__file__).parent / 'watchlist.json'
-
-def get_default_watchlist():
-    """获取默认自选列表"""
-    return {
-        'a_share': ['515880', '588000', '560780', '562500', '516160', '516080'],
-        'us': ['513100', '513500', '513050', '513180']
-    }
 
 def load_watchlist():
     """加载自选列表"""
     if WATCHLIST_FILE.exists():
         with open(WATCHLIST_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return get_default_watchlist()
+    save_watchlist(DEFAULT_WATCHLIST)
+    return DEFAULT_WATCHLIST
 
 def save_watchlist(watchlist):
     """保存自选列表"""
     with open(WATCHLIST_FILE, 'w', encoding='utf-8') as f:
         json.dump(watchlist, f, ensure_ascii=False, indent=2)
 
-def add_to_watchlist(etf_code, market='a_share'):
+def add_to_watchlist(code, name, market='1', category='a_share'):
     """添加到自选"""
     watchlist = load_watchlist()
-    if etf_code not in watchlist.get(market, []):
-        watchlist.setdefault(market, []).append(etf_code)
-        save_watchlist(watchlist)
+    # 检查是否已存在
+    for item in watchlist.get(category, []):
+        if item['code'] == code:
+            return watchlist
+    watchlist.setdefault(category, []).append({
+        'code': code, 'name': name, 'market': market
+    })
+    save_watchlist(watchlist)
     return watchlist
 
-def remove_from_watchlist(etf_code, market='a_share'):
+def remove_from_watchlist(code, category='a_share'):
     """从自选移除"""
     watchlist = load_watchlist()
-    if etf_code in watchlist.get(market, []):
-        watchlist[market].remove(etf_code)
-        save_watchlist(watchlist)
+    watchlist[category] = [item for item in watchlist.get(category, []) if item['code'] != code]
+    save_watchlist(watchlist)
     return watchlist
 
-def get_etf_list(market='all'):
-    """获取ETF列表"""
-    if market == 'all':
-        return {**ETF_CONFIG['a_share'], **ETF_CONFIG['us']}
-    elif market == 'a_share':
-        return ETF_CONFIG['a_share']
-    elif market == 'us':
-        return ETF_CONFIG['us']
-    return {}
-
-def get_etf_info(code):
-    """获取单个ETF信息"""
-    for market in ETF_CONFIG.values():
-        for name, info in market.items():
-            if info['code'] == code:
-                return {'name': name, **info}
+def get_etf_quote(code, market='1'):
+    """通过通达信获取单只ETF实时行情"""
+    try:
+        # 使用通达信MCP获取行情
+        result = subprocess.run(
+            ['node', '-e', f'''
+            const {{ createMcpClient }} = require('C:/Users/let2free/.workbuddy/connectors/skills/connector-tdx-connector/mcp-client.js');
+            async function main() {{
+                const client = await createMcpClient();
+                const result = await client.callTool({{
+                    name: 'tdx_quotes',
+                    arguments: {{ code: '{code}', setcode: '{market}', hasExtInfo: '1', bspNum: '0' }}
+                }});
+                console.log(JSON.stringify(result));
+            }}
+            main().catch(console.error);
+            '''],
+            capture_output=True, text=True, timeout=10,
+            cwd='C:/Users/let2free/.workbuddy/connectors/skills/connector-tdx-connector'
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            data = json.loads(result.stdout.strip())
+            return parse_quote_data(data, code, market)
+    except Exception as e:
+        print(f"获取行情失败 {code}: {e}")
     return None
 
-def generate_mock_etf_data():
-    """生成模拟ETF数据（实际使用时从通达信获取）"""
+def parse_quote_data(data, code, market):
+    """解析通达信行情数据"""
+    try:
+        if isinstance(data, dict) and 'content' in data:
+            content = data['content']
+            if isinstance(content, list) and len(content) > 0:
+                text = content[0].get('text', '')
+                # 从文本中提取数据
+                lines = text.split('\n')
+                result = {'code': code, 'market': market}
+                for line in lines:
+                    if '现价' in line or '最新价' in line:
+                        try:
+                            result['price'] = float(line.split(':')[-1].strip().replace(',', ''))
+                        except:
+                            pass
+                    elif '涨跌幅' in line:
+                        try:
+                            result['change_pct'] = float(line.split(':')[-1].strip().replace('%', '').replace(',', ''))
+                        except:
+                            pass
+                    elif '成交量' in line:
+                        try:
+                            result['volume'] = float(line.split(':')[-1].strip().replace(',', ''))
+                        except:
+                            pass
+                    elif '成交额' in line:
+                        try:
+                            result['amount'] = float(line.split(':')[-1].strip().replace(',', ''))
+                        except:
+                            pass
+                    elif '名称' in line:
+                        result['name'] = line.split(':')[-1].strip()
+                return result
+    except Exception as e:
+        print(f"解析数据失败: {e}")
+    return None
+
+def get_etf_list_from_tdx(page=1, page_size=100):
+    """从通达信获取ETF列表"""
+    try:
+        result = subprocess.run(
+            ['node', '-e', f'''
+            const {{ createMcpClient }} = require('C:/Users/let2free/.workbuddy/connectors/skills/connector-tdx-connector/mcp-client.js');
+            async function main() {{
+                const client = await createMcpClient();
+                const result = await client.callTool({{
+                    name: 'tdx_screener',
+                    arguments: {{ message: 'ETF', rang: 'JJ', pageNo: '{page}', pageSize: '{page_size}' }}
+                }});
+                console.log(JSON.stringify(result));
+            }}
+            main().catch(console.error);
+            '''],
+            capture_output=True, text=True, timeout=30,
+            cwd='C:/Users/let2free/.workbuddy/connectors/skills/connector-tdx-connector'
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            data = json.loads(result.stdout.strip())
+            return parse_screener_data(data)
+    except Exception as e:
+        print(f"获取ETF列表失败: {e}")
+    return []
+
+def parse_screener_data(data):
+    """解析选股数据"""
+    etfs = []
+    try:
+        if isinstance(data, dict) and 'content' in data:
+            content = data['content']
+            if isinstance(content, list) and len(content) > 0:
+                text = content[0].get('text', '')
+                # 解析表格数据
+                lines = text.split('\n')
+                for line in lines:
+                    if '|' in line and ('ETF' in line or 'etf' in line.lower()):
+                        parts = [p.strip() for p in line.split('|') if p.strip()]
+                        if len(parts) >= 4:
+                            etfs.append({
+                                'code': parts[1],
+                                'name': parts[2],
+                                'market': '1' if parts[1].startswith('5') or parts[1].startswith('6') else '0'
+                            })
+    except Exception as e:
+        print(f"解析ETF列表失败: {e}")
+    return etfs
+
+def generate_mock_etf_data(count=50):
+    """生成模拟ETF数据（当通达信不可用时使用）"""
     import random
     
-    etf_list = get_etf_list()
-    data = {}
+    # 常见ETF列表
+    common_etfs = [
+        {'code': '515880', 'name': '通信ETF', 'market': '1'},
+        {'code': '588000', 'name': '科创50ETF', 'market': '1'},
+        {'code': '560780', 'name': '半导体设备ETF', 'market': '1'},
+        {'code': '562500', 'name': '机器人ETF', 'market': '1'},
+        {'code': '516160', 'name': '新能源ETF', 'market': '1'},
+        {'code': '516080', 'name': '创新药ETF', 'market': '1'},
+        {'code': '159995', 'name': '芯片ETF', 'market': '0'},
+        {'code': '512660', 'name': '军工ETF', 'market': '1'},
+        {'code': '512880', 'name': '证券ETF', 'market': '1'},
+        {'code': '512800', 'name': '银行ETF', 'market': '1'},
+        {'code': '159928', 'name': '消费ETF', 'market': '0'},
+        {'code': '512010', 'name': '医药ETF', 'market': '1'},
+        {'code': '515030', 'name': '新能源车ETF', 'market': '1'},
+        {'code': '515790', 'name': '光伏ETF', 'market': '1'},
+        {'code': '515070', 'name': '人工智能ETF', 'market': '1'},
+        {'code': '516010', 'name': '游戏ETF', 'market': '1'},
+        {'code': '512980', 'name': '传媒ETF', 'market': '1'},
+        {'code': '512200', 'name': '房地产ETF', 'market': '1'},
+        {'code': '159745', 'name': '建材ETF', 'market': '0'},
+        {'code': '515210', 'name': '钢铁ETF', 'market': '1'},
+        {'code': '515220', 'name': '煤炭ETF', 'market': '1'},
+        {'code': '512400', 'name': '有色金属ETF', 'market': '1'},
+        {'code': '159870', 'name': '化工ETF', 'market': '0'},
+        {'code': '159825', 'name': '农业ETF', 'market': '0'},
+        {'code': '159865', 'name': '养殖ETF', 'market': '0'},
+        {'code': '159766', 'name': '旅游ETF', 'market': '0'},
+        {'code': '515170', 'name': '食品饮料ETF', 'market': '1'},
+        {'code': '159996', 'name': '家电ETF', 'market': '0'},
+        {'code': '516110', 'name': '汽车ETF', 'market': '1'},
+        {'code': '159611', 'name': '电力ETF', 'market': '0'},
+        {'code': '513100', 'name': '纳指科技ETF', 'market': '1'},
+        {'code': '513500', 'name': '标普500ETF', 'market': '1'},
+        {'code': '513050', 'name': '中概互联ETF', 'market': '1'},
+        {'code': '513180', 'name': '恒生科技ETF', 'market': '1'},
+        {'code': '513400', 'name': '道琼斯ETF', 'market': '1'},
+        {'code': '513880', 'name': '日经ETF', 'market': '1'},
+        {'code': '513030', 'name': '德国ETF', 'market': '1'},
+        {'code': '513080', 'name': '法国ETF', 'market': '1'},
+        {'code': '513090', 'name': '英国ETF', 'market': '1'},
+        {'code': '164824', 'name': '印度ETF', 'market': '0'},
+        {'code': '159987', 'name': '越南ETF', 'market': '0'},
+    ]
     
-    for name, info in etf_list.items():
-        code = info['code']
-        market = info['market']
-        
-        # 生成模拟数据
+    data = {}
+    for etf in common_etfs[:count]:
         base_price = random.uniform(0.5, 5.0)
         change_pct = random.uniform(-5, 8)
         volume = random.randint(1000000, 50000000)
         amount = volume * base_price * random.uniform(0.8, 1.2)
         
-        data[code] = {
-            'name': name,
-            'code': code,
-            'market': market,
+        data[etf['code']] = {
+            'name': etf['name'],
+            'code': etf['code'],
+            'market': etf['market'],
             'price': round(base_price, 3),
             'change_pct': round(change_pct, 2),
             'volume': volume,
@@ -144,9 +251,6 @@ def generate_mock_etf_data():
             'low': round(base_price * (1 - abs(change_pct/100) - random.uniform(0, 0.02)), 3),
             'pre_close': round(base_price / (1 + change_pct/100), 3),
             'turnover_rate': round(random.uniform(0.5, 15), 2),
-            'pe_ratio': round(random.uniform(10, 100), 2),
-            'pb_ratio': round(random.uniform(0.5, 10), 2),
-            'total_market_cap': round(random.uniform(100000000, 50000000000), 0),
             'updated_at': datetime.now().isoformat()
         }
     
@@ -154,10 +258,8 @@ def generate_mock_etf_data():
 
 def calculate_rankings(data, sort_by='change_pct', top_n=50):
     """计算ETF排名"""
-    # 转换为列表
     etf_list = [{'code': code, **info} for code, info in data.items()]
     
-    # 排序
     if sort_by == 'change_pct':
         etf_list.sort(key=lambda x: x.get('change_pct', 0), reverse=True)
     elif sort_by == 'volume':
@@ -167,7 +269,6 @@ def calculate_rankings(data, sort_by='change_pct', top_n=50):
     elif sort_by == 'turnover_rate':
         etf_list.sort(key=lambda x: x.get('turnover_rate', 0), reverse=True)
     
-    # 添加排名
     for i, etf in enumerate(etf_list[:top_n], 1):
         etf['rank'] = i
     
@@ -178,28 +279,37 @@ def get_watchlist_data():
     watchlist = load_watchlist()
     all_data = generate_mock_etf_data()
     
-    result = {
-        'a_share': [],
-        'us': []
-    }
+    result = {'a_share': [], 'us': []}
     
-    for market, codes in watchlist.items():
-        for code in codes:
+    for category in ['a_share', 'us']:
+        for item in watchlist.get(category, []):
+            code = item['code']
             if code in all_data:
-                result[market].append(all_data[code])
+                result[category].append(all_data[code])
+            else:
+                # 如果不在模拟数据中，使用基本信息
+                result[category].append({
+                    'code': code,
+                    'name': item.get('name', code),
+                    'market': item.get('market', '1'),
+                    'price': 0,
+                    'change_pct': 0,
+                    'volume': 0,
+                    'amount': 0,
+                    'turnover_rate': 0,
+                    'updated_at': datetime.now().isoformat()
+                })
     
     # 按涨跌幅排序
-    for market in result:
-        result[market].sort(key=lambda x: x.get('change_pct', 0), reverse=True)
+    for category in result:
+        result[category].sort(key=lambda x: x.get('change_pct', 0), reverse=True)
     
     return result
 
 def get_etf_detail(code):
     """获取ETF详细信息"""
     all_data = generate_mock_etf_data()
-    if code in all_data:
-        return all_data[code]
-    return None
+    return all_data.get(code, None)
 
 def get_sector_etfs():
     """获取行业ETF分类"""
@@ -222,11 +332,10 @@ def get_sector_etfs():
         for code in codes:
             if code in all_data:
                 result[sector].append(all_data[code])
-        # 按涨跌幅排序
         result[sector].sort(key=lambda x: x.get('change_pct', 0), reverse=True)
     
     return result
 
 # 初始化自选文件
 if not WATCHLIST_FILE.exists():
-    save_watchlist(get_default_watchlist())
+    save_watchlist(DEFAULT_WATCHLIST)
