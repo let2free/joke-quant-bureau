@@ -270,11 +270,14 @@ def run_factor_optimization(handler) -> Dict:
 
 def run_backtest_simulation_api(handler) -> Dict:
     """API: 运行回测模拟"""
-    content_length = int(handler.headers.get("Content-Length", 0))
-    if content_length == 0:
-        return {"status": "error", "message": "缺少请求体"}
-    
-    body = handler.rfile.read(content_length)
+    # body可能已被server预读到_cached_body，或需要从rfile读取
+    if hasattr(handler, '_cached_body') and handler._cached_body:
+        body = handler._cached_body
+    else:
+        content_length = int(handler.headers.get("Content-Length", 0))
+        if content_length == 0:
+            return {"status": "error", "message": "缺少请求体"}
+        body = handler.rfile.read(content_length)
     try:
         params = json.loads(body)
     except json.JSONDecodeError:

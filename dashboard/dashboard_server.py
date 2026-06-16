@@ -15,6 +15,7 @@ from pathlib import Path
 
 # 导入回测模块
 import backtest
+from backtest import load_backtest_accuracy, run_factor_optimization, run_backtest_simulation_api
 
 # 导入数据导入模块
 from data_importer import importer
@@ -390,30 +391,33 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         # API: 回测 - 准确率历史
         elif path == "/api/backtest/accuracy":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            data = load_backtest_accuracy(self)
-            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                data = load_backtest_accuracy(self)
+                self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False).encode("utf-8"))
 
         # API: 回测 - 因子优化
         elif path == "/api/backtest/factor-optimize":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            data = run_factor_optimization(self)
-            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
-
-        # API: 回测 - 运行回测
-        elif path == "/api/backtest/run" and self.command == "POST":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            data = run_backtest_simulation(self)
-            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                data = run_factor_optimization(self)
+                self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False).encode("utf-8"))
 
         # API: ETF排名
         elif path == "/api/etf/rankings":
@@ -594,6 +598,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
+    def do_OPTIONS(self):
+        """处理CORS预检请求"""
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
     def do_POST(self):
         """处理POST请求（更新数据）"""
         path = self.path.split("?")[0]
@@ -659,6 +671,23 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
             except Exception as e:
                 self.send_error(500, str(e))
+
+        # API: 回测 - 运行回测
+        elif path == "/api/backtest/run":
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                # 将body注入handler供backtest模块读取
+                self._cached_body = body
+                data = run_backtest_simulation_api(self)
+                self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False).encode("utf-8"))
 
         # API: 导入历史数据
         elif path == "/api/import":
