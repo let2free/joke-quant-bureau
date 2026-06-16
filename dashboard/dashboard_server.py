@@ -5,7 +5,7 @@
 """
 
 import http.server
-import socketerver
+import socketserver
 import json
 import os
 import threading
