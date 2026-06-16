@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>龙虾协同中心 - 九章量化局</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .nav-tab:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .module {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .module-title {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .module-title .badge {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        /* Module 1: Agent Status */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .agent-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .agent-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .agent-card.status-active {
+            border-left-color: #28a745;
+        }
+
+        .agent-card.status-busy {
+            border-left-color: #ffc107;
+        }
+
+        .agent-card.status-error {
+            border-left-color: #dc3545;
+        }
+
+        .agent-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .agent-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .agent-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .agent-status.busy {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .agent-status.idle {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .agent-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .agent-info {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .agent-info span {
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Module 2: Collaboration Log */
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .log-time {
+            color: #6a9955;
+        }
+
+        .log-agent {
+            color: #569cd6;
+            font-weight: bold;
+        }
+
+        .log-arrow {
+            color: #d4d4d4;
+        }
+
+        .log-message {
+            color: #d4d4d4;
+        }
+
+        .log-entry.log-type-status .log-message {
+            color: #4ec9b0;
+        }
+
+        .log-entry.log-type-error .log-message {
+            color: #f48771;
+        }
+
+        /* Module 3: Analysis Artifacts */
+        .artifacts-tree {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .artifact-date {
+            margin-bottom: 15px;
+            border-left: 3px solid #667eea;
+            padding-left: 15px;
+        }
+
+        .artifact-date-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .artifact-date-title:hover {
+            color: #667eea;
+        }
+
+        .artifact-list {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .artifact-item {
+            padding: 8px 0;
+            font-size: 14px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .artifact-item:hover {
+            color: #667eea;
+            cursor: pointer;
+        }
+
+        .artifact-icon {
+            font-size: 18px;
+        }
+
+        .artifact-name {
+            flex: 1;
+        }
+
+        .artifact-accuracy {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .artifact-accuracy.high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .artifact-accuracy.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .artifact-accuracy.low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Module 4: Accuracy Tracking */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .accuracy-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .accuracy-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .accuracy-card .value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .accuracy-card .label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Module 5: Conflict Resolution */
+        .conflict-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .conflict-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .conflict-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .conflict-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .conflict-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .conflict-status.resolved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .conflict-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(102,126,234,0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🦞 龙虾协同中心</h1>
+                <div class="subtitle">九章量化局 - 多Agent高度协同工作平台</div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab" onclick="window.location.href='dashboard.html'">📊 预测看板</button>
+                <button class="nav-tab active">🦞 协同中心</button>
+            </div>
+        </div>
+
+        <!-- Module 1: Agent Status Panel -->
+        <div class="module">
+            <div class="module-title">
+                <span>🤖 Agent状态面板（实时）</span>
+                <span class="badge" id="agents-online">加载中...</span>
+            </div>
+            <div class="agents-grid" id="agents-grid">
+                <div class="loading">正在加载Agent状态...</div>
+            </div>
+        </div>
+
+        <!-- Module 2: Collaboration Log -->
+        <div class="module">
+            <div class="module-title">
+                <span>📝 协同日志（实时滚动）</span>
+                <button class="btn btn-primary" onclick="clearLog()">清空日志</button>
+            </div>
+            <div class="log-container" id="log-container">
+                <div class="log-entry">
+                    <span class="log-time">[2026-06-16 03:31:00]</span>
+                    <span class="log-message">系统初始化完成，等待Agent连接...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 3: Analysis Artifacts -->
+        <div class="module">
+            <div class="module-title">
+                <span>📂 分析产物积累</span>
+                <span class="badge" id="artifacts-count">0 个产物</span>
+            </div>
+            <div class="artifacts-tree" id="artifacts-tree">
+                <div class="empty-state">
+                    <div class="icon">📂</div>
+                    <div>暂无分析产物，等待预测任务完成...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 4: Accuracy Tracking -->
+        <div class="module">
+            <div class="module-title">
+                <span>📈 准确率追踪曲线</span>
+                <button class="btn btn-success" onclick="downloadAccuracyData()">下载数据</button>
+            </div>
+            <div class="accuracy-summary" id="accuracy-summary">
+                <div class="accuracy-card">
+                    <div class="label">当前准确率</div>
+                    <div class="value" id="current-accuracy">--</div>
+                </div>
+                <div class="accuracy-card">
+                    <div class="label">目标准确率</div>
+                    <div class="value" style="color: #28a745;">95%</div>
+                </div>
+                <div class="accuracy-card">
+                    <div class="label">历史最高</div>
+                    <div class="value" id="max-accuracy" style="color: #ffc107;">--</div>
+                </div>
+                <div class="accuracy-card">
+                    <div class="label">待复盘次数</div>
+                    <div class="value" id="recap-count" style="color: #dc3545;">0</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="accuracy-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Module 5: Conflict Resolution -->
+        <div class="module">
+            <div class="module-title">
+                <span>⚖️ 冲突解决记录</span>
+                <button class="btn btn-warning" onclick="showAddConflictModal()">记录新冲突</button>
+            </div>
+            <table class="conflict-table" id="conflict-table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>Agent A</th>
+                        <th>Agent B</th>
+                        <th>争议点</th>
+                        <th>解决方式</th>
+                        <th>结果</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="conflict-tbody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #999; padding: 40px;">
+                            暂无冲突记录
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshAll()" title="刷新所有数据">🔄</button>
+
+    <script>
+        // ==================== Module 1: Agent Status ====================
+        let agentsData = {};
+
+        async function loadAgentsStatus() {
+            try {
+                const response = await fetch('/api/agents/status');
+                agentsData = await response.json();
+                renderAgentsGrid();
+            } catch (error) {
+                console.error('加载Agent状态失败:', error);
+            }
+        }
+
+        function renderAgentsGrid() {
+            const grid = document.getElementById('agents-grid');
+            const agents = agentsData.agents || {};
+            let onlineCount = 0;
+            let html = '';
+
+            for (const [name, info] of Object.entries(agents)) {
+                const isOnline = info.status !== 'offline';
+                if (isOnline) onlineCount++;
+
+                const statusClass = info.status === 'active' ? 'active' : 
+                                 info.status === 'busy' ? 'busy' : 
+                                 info.status === 'error' ? 'error' : '';
+                
+                const statusText = {
+                    'active': '🟢 工作中',
+                    'busy': '🟡 繁忙',
+                    'idle': '⚪ 待机',
+                    'error': '🔴 错误',
+                    'offline': '⚫ 离线'
+                }[info.status] || '⚪ 未知';
+
+                html += `
+                    <div class="agent-card status-${info.status} ${statusClass}">
+                        <div class="agent-name">${name}</div>
+                        <div class="agent-status ${info.status}">${statusText}</div>
+                        <div class="agent-info">
+                            <div>当前任务: <span>${info.current_task || '无'}</span></div>
+                            <div>完成任务: <span>${info.tasks_completed || 0}</span></div>
+                            <div>准确率: <span>${info.accuracy !== null ? (info.accuracy * 100).toFixed(1) + '%' : '待评估'}</span></div>
+                            <div>最后更新: <span>${info.last_update ? info.last_update.split('T')[1].split('.')[0] : '--:--:--'}</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+            document.getElementById('agents-online').textContent = `${onlineCount}/9 在线`;
+        }
+
+        // ==================== Module 2: Collaboration Log ====================
+        let logEntries = [];
+
+        async function loadCollaborationLog() {
+            try {
+                const response = await fetch('/api/collab/log');
+                logEntries = await response.json();
+                renderLog();
+            } catch (error) {
+                console.error('加载协同日志失败:', error);
+            }
+        }
+
+        function renderLog() {
+            const container = document.getElementById('log-container');
+            let html = '';
+
+            for (const entry of logEntries.slice(-50)) {  // 只显示最近50条
+                const logClass = entry.type || 'info';
+                html += `
+                    <div class="log-entry log-type-${logClass}">
+                        <span class="log-time">[${entry.timestamp}]</span>
+                        ${entry.from ? `<span class="log-agent">${entry.from}</span> <span class="log-arrow">→</span> <span class="log-agent">${entry.to}</span>: ` : ''}
+                        <span class="log-message">${entry.message}</span>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;  // 自动滚动到底部
+        }
+
+        function addLogEntry(from, to, message, type='info') {
+            const entry = {
+                timestamp: new Date().toISOString().replace('T', ' ').split('.')[0],
+                from: from,
+                to: to,
+                message: message,
+                type: type
+            };
+            logEntries.push(entry);
+            renderLog();
+            saveLog();
+        }
+
+        function clearLog() {
+            if (confirm('确定要清空所有日志吗？')) {
+                logEntries = [];
+                renderLog();
+            }
+        }
+
+        async function saveLog() {
+            try {
+                await fetch('/api/collab/log', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(logEntries)
+                });
+            } catch (error) {
+                console.error('保存日志失败:', error);
+            }
+        }
+
+        // ==================== Module 3: Analysis Artifacts ====================
+        let artifactsData = {};
+
+        async function loadArtifacts() {
+            try {
+                const response = await fetch('/api/analysis/artifacts');
+                artifactsData = await response.json();
+                renderArtifacts();
+            } catch (error) {
+                console.error('加载分析产物失败:', error);
+            }
+        }
+
+        function renderArtifacts() {
+            const tree = document.getElementById('artifacts-tree');
+            const dates = Object.keys(artifactsData).sort().reverse();
+
+            if (dates.length === 0) {
+                tree.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📂</div>
+                        <div>暂无分析产物，等待预测任务完成...</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            let totalCount = 0;
+
+            for (const date of dates) {
+                const artifacts = artifactsData[date];
+                totalCount += artifacts.length;
+
+                html += `
+                    <div class="artifact-date">
+                        <div class="artifact-date-title" onclick="toggleArtifactDate('${date}')">
+                            <span>📅 ${date}</span>
+                            <span>▼</span>
+                        </div>
+                        <ul class="artifact-list" id="artifact-list-${date}">
+                `;
+
+                for (const artifact of artifacts) {
+                    const accuracyClass = artifact.accuracy >= 0.9 ? 'high' : 
+                                        artifact.accuracy >= 0.7 ? 'medium' : 'low';
+                    const accuracyText = artifact.accuracy !== null ? 
+                                       (artifact.accuracy * 100).toFixed(1) + '%' : '待评估';
+
+                    html += `
+                        <li class="artifact-item">
+                            <span class="artifact-icon">${getArtifactIcon(artifact.type)}</span>
+                            <span class="artifact-name">${artifact.name}</span>
+                            ${artifact.accuracy !== null ? `<span class="artifact-accuracy ${accuracyClass}">${accuracyText}</span>` : ''}
+                        </li>
+                    `;
+                }
+
+                html += `
+                        </ul>
+                    </div>
+                `;
+            }
+
+            tree.innerHTML = html;
+            document.getElementById('artifacts-count').textContent = `${totalCount} 个产物`;
+        }
+
+        function getArtifactIcon(type) {
+            const icons = {
+                'track_a': '📄',
+                'track_b': '📊',
+                'fusion': '📝',
+                'recap': '📈',
+                'other': '📎'
+            };
+            return icons[type] || '📎';
+        }
+
+        function toggleArtifactDate(date) {
+            const list = document.getElementById(`artifact-list-${date}`);
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // ==================== Module 4: Accuracy Tracking ====================
+        let accuracyChart = null;
+
+        async function loadAccuracyData() {
+            try {
+                const response = await fetch('/api/accuracy/history');
+                const data = await response.json();
+                renderAccuracyChart(data);
+                updateAccuracySummary(data);
+            } catch (error) {
+                console.error('加载准确率数据失败:', error);
+            }
+        }
+
+        function renderAccuracyChart(data) {
+            const ctx = document.getElementById('accuracy-chart').getContext('2d');
+
+            if (accuracyChart) {
+                accuracyChart.destroy();
+            }
+
+            const dates = data.map(d => d.date);
+            const accuracies = data.map(d => d.accuracy * 100);
+            const targets = data.map(d => 95);  // 目标95%
+
+            accuracyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: '实际准确率',
+                        data: accuracies,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '目标准确率',
+                        data: targets,
+                        borderColor: '#28a745',
+                        borderDash: [5, 5],
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAccuracySummary(data) {
+            if (data.length === 0) {
+                document.getElementById('current-accuracy').textContent = '--';
+                document.getElementById('max-accuracy').textContent = '--';
+                return;
+            }
+
+            const current = data[data.length - 1].accuracy * 100;
+            const max = Math.max(...data.map(d => d.accuracy * 100));
+            const recapCount = data.filter(d => d.accuracy < 0.95).length;
+
+            document.getElementById('current-accuracy').textContent = current.toFixed(1) + '%';
+            document.getElementById('max-accuracy').textContent = max.toFixed(1) + '%';
+            document.getElementById('recap-count').textContent = recapCount;
+        }
+
+        function downloadAccuracyData() {
+            window.open('/api/accuracy/history?download=true', '_blank');
+        }
+
+        // ==================== Module 5: Conflict Resolution ====================
+        let conflictsData = [];
+
+        async function loadConflicts() {
+            try {
+                const response = await fetch('/api/conflicts');
+                conflictsData = await response.json();
+                renderConflicts();
+            } catch (error) {
+                console.error('加载冲突记录失败:', error);
+            }
+        }
+
+        function renderConflicts() {
+            const tbody = document.getElementById('conflict-tbody');
+
+            if (conflictsData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #999; padding: 40px;">
+                            暂无冲突记录
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            for (const conflict of conflictsData) {
+                html += `
+                    <tr>
+                        <td>${conflict.timestamp}</td>
+                        <td>${conflict.agent_a}</td>
+                        <td>${conflict.agent_b}</td>
+                        <td>${conflict.issue}</td>
+                        <td>${conflict.resolution}</td>
+                        <td>${conflict.result}</td>
+                        <td><span class="conflict-status ${conflict.status}">${conflict.status === 'resolved' ? '✅ 已解决' : '⏳ 待解决'}</span></td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        function showAddConflictModal() {
+            const agentA = prompt('Agent A 名称:');
+            if (!agentA) return;
+            const agentB = prompt('Agent B 名称:');
+            if (!agentB) return;
+            const issue = prompt('争议点:');
+            if (!issue) return;
+            const resolution = prompt('解决方式:');
+            if (!resolution) return;
+            const result = prompt('结果:');
+            if (!result) return;
+
+            const conflict = {
+                timestamp: new Date().toISOString().replace('T', ' ').split('.')[0],
+                agent_a: agentA,
+                agent_b: agentB,
+                issue: issue,
+                resolution: resolution,
+                result: result,
+                status: 'resolved'
+            };
+
+            conflictsData.push(conflict);
+            saveConflicts();
+            renderConflicts();
+        }
+
+        async function saveConflicts() {
+            try {
+                await fetch('/api/conflicts', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(conflictsData)
+                });
+            } catch (error) {
+                console.error('保存冲突记录失败:', error);
+            }
+        }
+
+        // ==================== Refresh All ====================
+        function refreshAll() {
+            loadAgentsStatus();
+            loadCollaborationLog();
+            loadArtifacts();
+            loadAccuracyData();
+            loadConflicts();
+        }
+
+        // ==================== Auto Refresh ====================
+        setInterval(refreshAll, 15000);  // 每15秒自动刷新
+
+        // ==================== Initial Load ====================
+        refreshAll();
+    </script>
+</body>
+</html>

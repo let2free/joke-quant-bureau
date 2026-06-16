@@ -1,0 +1,36 @@
+{
+  "2026-06-16": [
+    {
+      "type": "track_a",
+      "name": "大A_Track_A_通信ETF分析.md",
+      "accuracy": null,
+      "timestamp": "2026-06-16T15:30:00"
+    },
+    {
+      "type": "track_b",
+      "name": "量化1哥_Track_B_因子得分_6ETF.json",
+      "accuracy": null,
+      "timestamp": "2026-06-16T15:31:00"
+    },
+    {
+      "type": "fusion",
+      "name": "融合引擎_融合报告_20260616.json",
+      "accuracy": null,
+      "timestamp": "2026-06-16T15:32:00"
+    }
+  ],
+  "2026-06-15": [
+    {
+      "type": "track_a",
+      "name": "大A_Track_A_新能源ETF分析.md",
+      "accuracy": 0.50,
+      "timestamp": "2026-06-15T15:30:00"
+    },
+    {
+      "type": "recap",
+      "name": "史官_复盘报告_R1-R6_20260615.md",
+      "accuracy": null,
+      "timestamp": "2026-06-15T20:00:00"
+    }
+  ]
+}

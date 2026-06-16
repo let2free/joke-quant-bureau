@@ -1,0 +1,68 @@
+{
+  "agents": {
+    "大A": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "老美": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "军机处": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "量化1哥": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "包青天": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "史官": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "执行者": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "风控": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    },
+    "协调官": {
+      "status": "idle",
+      "current_task": null,
+      "last_update": "2026-06-16T03:31:00",
+      "tasks_completed": 0,
+      "accuracy": null
+    }
+  },
+  "last_updated": "2026-06-16T03:31:00"
+}
