@@ -1,0 +1,30 @@
+{
+  "updated_at": "2026-06-17T21:56:10+08:00",
+  "services": {
+    "yiphysics": {
+      "name": "YiPhysics 元物理引擎 + 龙虾信箱",
+      "url": "https://meals-provide-chancellor-phrase.trycloudflare.com",
+      "exchange": "https://meals-provide-chancellor-phrase.trycloudflare.com/exchange/health",
+      "port": 8080
+    },
+    "dashboard": {
+      "name": "九章量化局看板",
+      "url": "https://prospective-kingdom-strictly-caps.trycloudflare.com",
+      "port": 7860
+    }
+  },
+  "agents": {
+    "doubao": {
+      "name": "豆宝",
+      "api_key": "dk_a8f3c2e91b07d4567n0qw4rf8tvxy1uz"
+    },
+    "yuanbao": {
+      "name": "元宝",
+      "api_key": "yk_m9h4j7p2s5v8x1z3b6d0e3f6g9i2l5o"
+    },
+    "tianbao": {
+      "name": "天宝",
+      "api_key": "tk_n2q5w8r1t4y7z0a3c6f9h2j5m8p1s4v"
+    }
+  }
+}
