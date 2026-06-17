@@ -333,11 +333,13 @@ function renderRadar(data) {
   const top3 = data.rankings.slice(0,3).filter(r=>r.name);
   if(top3.length<2) return;
   const factors = ['动量','资金流','均值回归','波动率','微观结构','市场状态'];
-  const colors = ['#ff4d6a','#4a6cf5','#00e676'];
-  const fills = ['rgba(255,77,106,0.12)','rgba(74,108,245,0.12)','rgba(0,230,118,0.12)'];
+  // 三种鲜明易区分的半透明色块
+  const fills = ['rgba(255,77,106,0.25)','rgba(74,130,255,0.30)','rgba(0,230,150,0.25)'];
+  const borders = ['rgba(255,77,106,0.85)','rgba(74,130,255,0.85)','rgba(0,230,150,0.85)'];
   const vals = top3.map((r,i)=>{
     const s = r.score_b||(70+i*8);
-    return [s*0.88,s*0.78,s*0.50,s*0.55,s*0.75,s*0.82].map(v=>Math.min(95,Math.max(25,v)));
+    // 增大各ETF间的分值差异
+    return [s*0.92,s*0.82,s*0.45,s*0.52,s*0.72,s*0.88].map(v=>Math.min(95,Math.max(22,v)));
   });
   new Chart(document.getElementById('radar-chart'),{
     type:'radar',
@@ -345,15 +347,17 @@ function renderRadar(data) {
       labels:factors,
       datasets: top3.map((r,i)=>({
         label:r.name, data:vals[i],
-        borderColor:colors[i], backgroundColor:fills[i],
-        borderWidth:2.5, pointRadius:5, pointBackgroundColor:colors[i],
-        pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:7
+        backgroundColor:fills[i],
+        borderColor:borders[i],
+        borderWidth:1.5, pointRadius:4, pointBackgroundColor:borders[i],
+        pointBorderColor:'#fff', pointBorderWidth:1.5, pointHoverRadius:6,
+        fill:true
       }))
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:12,usePointStyle:true,pointStyle:'circle',font:{size:11}}}},
-      scales:{r:{min:0,max:100,ticks:{color:'#6b7b99',backdropColor:'transparent',stepSize:25,font:{size:9}},grid:{color:'rgba(30,42,74,0.9)'},pointLabels:{color:'#c0c8e0',font:{size:12,weight:'bold'}},angleLines:{color:'rgba(30,42,74,0.7)'}}}
+      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:14,usePointStyle:true,pointStyle:'rectRounded',font:{size:11}}}},
+      scales:{r:{min:0,max:100,ticks:{color:'#6b7b99',backdropColor:'transparent',stepSize:25,font:{size:9}},grid:{color:'rgba(30,42,74,0.6)'},pointLabels:{color:'#c0c8e0',font:{size:11,weight:'600'}},angleLines:{color:'rgba(30,42,74,0.5)'}}}
     }
   });
 }
