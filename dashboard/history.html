@@ -6,6 +6,7 @@
 <title>历史数据 - 九章量化局</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="static/theme.css">
+<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
 <nav class="header">
@@ -20,7 +21,7 @@
   </div>
 </nav>
 
-<div class="container">
+<div class="container has-tip" data-tip="📁 历史数据 | 数据导入+浏览+导出 | 支持合并报告格式">
   
   <!-- 数据导入面板 -->
   <div class="section-title">
@@ -73,7 +74,7 @@
   </div>
   
   <!-- 预测数据表格 -->
-  <div class="panel card-keep">
+  <div class="card">
     <h3>预测记录</h3>
     <table class="data-table">
       <thead>
@@ -93,7 +94,7 @@
   </div>
   
   <!-- 准确率趋势图 -->
-  <div class="panel card-keep">
+  <div class="card">
     <h3>准确率趋势</h3>
     <div class="chart-container">
       <canvas id="accuracyChart"></canvas>
@@ -101,7 +102,7 @@
   </div>
   
   <!-- 因子得分图 -->
-  <div class="panel card-keep">
+  <div class="card">
     <h3>因子得分分布</h3>
     <div class="chart-container">
       <canvas id="factorChart"></canvas>

@@ -6,12 +6,14 @@
     <title>龙虾协同中心 - 九章量化局</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="static/theme.css">
+<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
-    <div class="container">
+    <div class="container has-tip" data-tip="🦞 龙虾协同 | Agent协作状态+协同日志 | 龙虾中枢5+1架构">
         <nav class="header">
   <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:1.4rem;">⬡</span><h1>九章量化局</h1>
+    <span style="font-size:1.4rem;">⬡</span>
+    <h1>九章量化局</h1>
     <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(168,85,247,0.15);padding:2px 8px;border-radius:4px;">龙虾协同</span>
   </div>
   <div style="display:flex;align-items:center;gap:20px;">
@@ -503,8 +505,8 @@
     </script>
 <script src="static/common.js"></script>
 <script>
-document.getElementById("nav-bar").innerHTML=renderNav("lobster_collab");
-updateClock("clock");setInterval(()=>updateClock("clock"),1000);
+document.getElementById('nav-bar').innerHTML = renderNav('lobster_collab');
+updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
 </script>
 </body>
 </html>

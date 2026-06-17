@@ -2,13 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>九章量化局 · 测算中心</title>
-<link rel="stylesheet" href="static/theme.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="static/theme.css">
+<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
-
 <nav class="header">
   <div style="display:flex;align-items:center;gap:12px;">
     <span style="font-size:1.4rem;">⬡</span>
@@ -21,54 +21,100 @@
   </div>
 </nav>
 
-<div class="status-bar has-tip" data-tip="🧮 测算中心 | 九章量化局Phase0-5完整流程 | 6因子打分+IC验证+风控审查 | 数据来源: database.py SQLite + artifacts JSON">
-  <div class="status-item"><span class="status-dot live"></span> <strong>测算引擎</strong> v2.0</div>
-  <div class="status-item">📅 <span id="st-date">--</span></div>
-  <div class="status-item">🔄 Phase: <strong style="color:var(--down)">0-5 完整</strong></div>
-  <div class="status-item">🎯 方法: <strong>TrackA+B 双轨融合</strong></div>
+<div class="container has-tip" data-tip="🧮 测算中心 | 九章量化局Phase0-5完整流程 | 6因子评分+IC验证+风控审查">
+  
+  <!-- 流程执行状态 -->
+  <div class="section-title">
+    <span class="icon">🔄</span> 九章量化局 · 流程执行状态
+  </div>
+  <div class="phase-flow" id="phase-flow">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- 核心指标 -->
+  <div class="section-title">
+    <span class="icon">📊</span> 核心指标
+  </div>
+  <div class="metric-grid" id="metrics-grid">
+    <!-- 动态填充 -->
+  </div>
+  
+  <!-- 最新预测结果 -->
+  <div class="section-title">
+    <span class="icon">🎯</span> 最新预测结果
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>📋 预测排名（校准后）</h3>
+      <table class="prediction-table" id="prediction-table">
+        <tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>🕸️ 因子得分雷达图</h3>
+      <div class="radar-container">
+        <canvas id="radar-chart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 准确率追踪 -->
+  <div class="section-title">
+    <span class="icon">📈</span> 准确率追踪
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>📊 历史准确率趋势</h3>
+      <div class="chart-container">
+        <canvas id="accuracy-chart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📉 预测误差分析</h3>
+      <div class="chart-container">
+        <canvas id="error-chart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 风险提示 -->
+  <div class="section-title">
+    <span class="icon">⚠️</span> 风险提示
+  </div>
+  <div class="card">
+    <div id="risk-list">
+      <!-- 动态填充 -->
+    </div>
+  </div>
+  
+  <!-- 复盘结论 -->
+  <div class="section-title">
+    <span class="icon">📝</span> 最新复盘结论
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>✅ 做对的</h3>
+      <div id="success-list"></div>
+    </div>
+    <div class="card">
+      <h3>❌ 需要改进</h3>
+      <div id="improve-list"></div>
+    </div>
+  </div>
+  
 </div>
 
-<div class="container">
-
-  <!-- ── 核心指标 ── -->
-  <div class="kpi-row" id="metrics-grid"></div>
-  
-  <!-- ── 最新预测 ── -->
-  <div class="panel fade-in">
-    <div class="panel-header"><h2>🎯 最新预测结果</h2></div>
-    <div class="grid grid-2">
-      <div><table class="data-table" id="prediction-table"><tr><th>#</th><th>ETF</th><th>预测</th><th>置信度</th><th>理由</th></tr></table></div>
-      <div><h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🕸️ 因子得分</h3><div style="height:350px;"><canvas id="radar-chart"></canvas></div></div>
-    </div>
-  </div>
-  
-  <!-- ── 准确率追踪 ── -->
-  <div class="panel fade-in">
-    <div class="panel-header"><h2>📈 准确率追踪</h2></div>
-    <div class="grid grid-2">
-      <div><h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📊 历史准确率</h3><div style="height:280px;"><canvas id="accuracy-chart"></canvas></div></div>
-      <div><h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📉 误差分析</h3><div style="height:280px;"><canvas id="error-chart"></canvas></div></div>
-    </div>
-  </div>
-  
-  <!-- ── 风险+复盘 ── -->
-  <div class="panel fade-in">
-    <div class="panel-header"><h2>⚠️ 风险提示 & 复盘结论</h2></div>
-    <div class="grid grid-2">
-      <div id="risk-list"></div>
-      <div><div id="success-list"></div><div style="margin-top:12px;" id="improve-list"></div></div>
-    </div>
-  </div>
-
-</div>
-
-<script src="static/common.js"></script>
 <script>
-document.getElementById('nav-bar').innerHTML = renderNav('jiuzhang');
-updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
-
 // 模拟数据（实际使用时从API获取）
 const mockData = {
+  phases: [
+    { name: 'Phase 0', agent: '系统', status: 'completed', label: '因子预检' },
+    { name: 'Phase 1', agent: '大A+老美+军机处', status: 'completed', label: '并行侦察' },
+    { name: 'Phase 2', agent: '量化1哥+数据工程师', status: 'completed', label: '深度分析' },
+    { name: 'Phase 3', agent: '因子研究员', status: 'completed', label: '交叉验证' },
+    { name: 'Phase 4', agent: '包青天', status: 'completed', label: '风控审查' },
+    { name: 'Phase 5', agent: '指挥官', status: 'completed', label: '双轨融合' }
+  ],
   metrics: [
     { label: '预测日期', value: '2026-06-17', change: '周二' },
     { label: '方向准确率', value: '100%', change: '历史最佳', up: true },
@@ -118,6 +164,7 @@ const mockData = {
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
+  renderPhases();
   renderMetrics();
   renderAgents();
   renderPredictions();
@@ -132,6 +179,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateClock() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN');
+}
+
+function renderPhases() {
+  const container = document.getElementById('phase-flow');
+  container.innerHTML = mockData.phases.map((phase, i) => {
+    const statusClass = phase.status === 'completed' ? 'completed' : phase.status === 'active' ? 'active' : '';
+    return `
+      ${i > 0 ? '<span class="phase-arrow">→</span>' : ''}
+      <div class="phase-step ${statusClass}">
+        <div class="phase-name">${phase.name}</div>
+        <div class="phase-agent">${phase.agent}</div>
+        <div style="font-size:0.7rem;color:#6b7b99">${phase.label}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 function renderMetrics() {
@@ -305,8 +367,9 @@ function renderRadarChart() {
     }
   });
 }
-
-// ── 导航 ──
+</script>
+<script src="static/common.js"></script>
+<script>
 document.getElementById('nav-bar').innerHTML = renderNav('jiuzhang');
 updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
 </script>
