@@ -2,254 +2,83 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>九章量化局 · 测算中心</title>
+<link rel="stylesheet" href="static/theme.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-    background: #0a0e27;
-    color: #e0e6ff;
-    min-height: 100vh;
-  }
-  :root {
-    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
-    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
-    --orange: #ff9f43; --pink: #ff6b9d;
-    --bg-card: #121630; --border: #1e264a;
-  }
-  .header {
-    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
-    border-bottom: 2px solid var(--blue);
-    padding: 10px 20px;
-    display: flex; justify-content: space-between; align-items: center;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
-  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
-  .nav-tab {
-    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
-    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
-    text-decoration: none; transition: all 0.3s;
-  }
-  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
-  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
-
-  .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
-  
-  .section-title {
-    font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px;
-    padding-bottom: 8px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-  }
-  .section-title .icon { font-size: 1.3rem; }
-  
-  .grid { display: grid; gap: 16px; }
-  .grid-2 { grid-template-columns: repeat(2, 1fr); }
-  .grid-3 { grid-template-columns: repeat(3, 1fr); }
-  .grid-4 { grid-template-columns: repeat(4, 1fr); }
-  
-  .card {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 16px; transition: border-color 0.3s;
-  }
-  .card:hover { border-color: var(--blue); }
-  .card h3 {
-    font-size: 0.85rem; color: #6b7b99; margin-bottom: 12px;
-    padding-bottom: 6px; border-bottom: 1px solid var(--border);
-  }
-  
-  /* 指标卡片 */
-  .metric-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;
-  }
-  .metric-card {
-    background: linear-gradient(135deg, #1a1f4a 0%, #121630 100%);
-    border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px; text-align: center;
-  }
-  .metric-value { font-size: 1.8rem; font-weight: bold; color: var(--cyan); }
-  .metric-label { font-size: 0.75rem; color: #6b7b99; margin-top: 4px; }
-  .metric-change { font-size: 0.8rem; margin-top: 6px; }
-  .metric-up { color: var(--up); }
-  .metric-down { color: var(--down); }
-  
-  /* 流程图 */
-  .phase-flow {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .phase-step {
-    background: #1a1f4a; border: 1px solid #2a3f6a; border-radius: 8px;
-    padding: 10px 15px; text-align: center; min-width: 120px;
-  }
-  .phase-step.active { border-color: var(--blue); background: #1a2a5a; }
-  .phase-step.completed { border-color: var(--down); background: #1a4a1a; }
-  .phase-name { font-size: 0.75rem; color: #6b7b99; margin-bottom: 4px; }
-  .phase-agent { font-size: 0.9rem; color: #c0c8e0; font-weight: bold; }
-  .phase-arrow { color: #6b7b99; font-size: 1.2rem; }
-  
-  /* 预测表格 */
-  .prediction-table {
-    width: 100%; border-collapse: collapse; font-size: 0.85rem;
-  }
-  .prediction-table th {
-    background: #1a1f4a; color: #6b7b99; padding: 10px 8px;
-    text-align: left; border-bottom: 2px solid var(--border);
-  }
-  .prediction-table td {
-    padding: 8px; border-bottom: 1px solid var(--border);
-  }
-  .prediction-table tr:hover { background: #1a1f4a33; }
-  .prediction-table .up { color: var(--up); }
-  .prediction-table .down { color: var(--down); }
-  
-  /* 因子雷达图容器 */
-  .radar-container { position: relative; height: 300px; }
-  
-  /* 置信度指示器 */
-  .confidence-badge {
-    display: inline-block; padding: 2px 8px; border-radius: 4px;
-    font-size: 0.75rem; font-weight: bold;
-  }
-  .confidence-high { background: rgba(0,230,118,0.2); color: var(--down); }
-  .confidence-medium { background: rgba(255,159,67,0.2); color: var(--orange); }
-  .confidence-low { background: rgba(255,77,106,0.2); color: var(--up); }
-  
-  /* Agent状态 */
-  .agent-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  }
-  .agent-card {
-    background: #0a0e27; border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px; text-align: center;
-  }
-  .agent-icon { font-size: 1.5rem; margin-bottom: 5px; }
-  .agent-name { font-size: 0.85rem; color: #c0c8e0; font-weight: bold; }
-  .agent-role { font-size: 0.7rem; color: #6b7b99; }
-  .agent-status { font-size: 0.7rem; margin-top: 5px; }
-  .status-online { color: var(--down); }
-  .status-busy { color: var(--orange); }
-  .status-idle { color: #6b7b99; }
-  
-  /* 图表容器 */
-  .chart-container { position: relative; height: 250px; }
-  
-  /* 风险提示 */
-  .risk-item {
-    display: flex; gap: 10px; padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .risk-icon { font-size: 1.2rem; }
-  .risk-content { flex: 1; }
-  .risk-level { font-size: 0.75rem; padding: 2px 6px; border-radius: 3px; }
-  .risk-high { background: rgba(255,77,106,0.2); color: var(--up); }
-  .risk-medium { background: rgba(255,159,67,0.2); color: var(--orange); }
-  .risk-low { background: rgba(107,123,153,0.2); color: var(--flat); }
-</style>
 </head>
 <body>
-<div class="header">
-  <h1>⬡ 九章量化局 · 测算中心</h1>
-  <div style="display: flex; align-items: center; gap: 20px;">
-    <div class="nav-tabs">
-      <a href="dashboard.html" class="nav-tab">📊 实时看板</a>
-      <a href="jiuzhang.html" class="nav-tab active">🧮 测算中心</a>
-      <a href="etf_monitor.html" class="nav-tab">📈 ETF监测</a>
-      <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
-      <a href="backtest.html" class="nav-tab">📉 回测验证</a>
-      <a href="history.html" class="nav-tab">📁 历史数据</a>
-      <a href="lobster_collab.html" class="nav-tab">🦞 龙虾协同</a>
-    </div>
-    <div style="font-size: 0.8rem; color: #6b7b99;">
-      <span id="clock">--:--:--</span>
-    </div>
+
+<nav class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:1.4rem;">⬡</span>
+    <h1>九章量化局</h1>
+    <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(168,85,247,0.15);padding:2px 8px;border-radius:4px;">测算中心</span>
   </div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="nav-tabs" id="nav-bar"></div>
+    <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
+  </div>
+</nav>
+
+<div class="status-bar has-tip" data-tip="🧮 测算中心 | 九章量化局Phase0-5完整流程 | 6因子打分+IC验证+风控审查 | 数据来源: database.py SQLite + artifacts JSON">
+  <div class="status-item"><span class="status-dot live"></span> <strong>测算引擎</strong> v2.0</div>
+  <div class="status-item">📅 <span id="st-date">--</span></div>
+  <div class="status-item">🔄 Phase: <strong style="color:var(--down)">0-5 完整</strong></div>
+  <div class="status-item">🎯 方法: <strong>TrackA+B 双轨融合</strong></div>
 </div>
 
 <div class="container">
-  
-  <!-- 流程执行状态 -->
-  <div class="section-title">
-    <span class="icon">🔄</span> 九章量化局 · 流程执行状态
-  </div>
+
+  <!-- ── 流程执行状态 ── -->
+  <div class="panel fade-in">
+    <div class="panel-header">
+      <h2>🔄 九章量化局 · 流程执行状态</h2>
+    </div>
   <div class="phase-flow" id="phase-flow">
     <!-- 动态填充 -->
   </div>
   
-  <!-- 核心指标 -->
-  <div class="section-title">
-    <span class="icon">📊</span> 核心指标
-  </div>
-  <div class="metric-grid" id="metrics-grid">
-    <!-- 动态填充 -->
-  </div>
-  
-  <!-- 最新预测结果 -->
-  <div class="section-title">
-    <span class="icon">🎯</span> 最新预测结果
-  </div>
-  <div class="grid grid-2">
-    <div class="card">
-      <h3>📋 预测排名（校准后）</h3>
-      <table class="prediction-table" id="prediction-table">
-        <tr><th>排名</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>
-      </table>
-    </div>
-    <div class="card">
-      <h3>🕸️ 因子得分雷达图</h3>
-      <div class="radar-container">
-        <canvas id="radar-chart"></canvas>
       </div>
+    <div class="phase-flow" id="phase-flow"></div>
+  </div>
+  
+  <!-- ── 核心指标 ── -->
+  <div class="kpi-row" id="metrics-grid"></div>
+  
+  <!-- ── 最新预测 ── -->
+  <div class="panel fade-in">
+    <div class="panel-header"><h2>🎯 最新预测结果</h2></div>
+    <div class="grid grid-2">
+      <div><table class="data-table" id="prediction-table"><tr><th>#</th><th>ETF</th><th>预测</th><th>置信度</th><th>理由</th></tr></table></div>
+      <div><h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🕸️ 因子得分</h3><div style="height:350px;"><canvas id="radar-chart"></canvas></div></div>
     </div>
   </div>
   
-  <!-- 准确率追踪 -->
-  <div class="section-title">
-    <span class="icon">📈</span> 准确率追踪
-  </div>
-  <div class="grid grid-2">
-    <div class="card">
-      <h3>📊 历史准确率趋势</h3>
-      <div class="chart-container">
-        <canvas id="accuracy-chart"></canvas>
-      </div>
-    </div>
-    <div class="card">
-      <h3>📉 预测误差分析</h3>
-      <div class="chart-container">
-        <canvas id="error-chart"></canvas>
-      </div>
+  <!-- ── 准确率追踪 ── -->
+  <div class="panel fade-in">
+    <div class="panel-header"><h2>📈 准确率追踪</h2></div>
+    <div class="grid grid-2">
+      <div><h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📊 历史准确率</h3><div style="height:280px;"><canvas id="accuracy-chart"></canvas></div></div>
+      <div><h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📉 误差分析</h3><div style="height:280px;"><canvas id="error-chart"></canvas></div></div>
     </div>
   </div>
   
-  <!-- 风险提示 -->
-  <div class="section-title">
-    <span class="icon">⚠️</span> 风险提示
-  </div>
-  <div class="card">
-    <div id="risk-list">
-      <!-- 动态填充 -->
+  <!-- ── 风险+复盘 ── -->
+  <div class="panel fade-in">
+    <div class="panel-header"><h2>⚠️ 风险提示 & 复盘结论</h2></div>
+    <div class="grid grid-2">
+      <div id="risk-list"></div>
+      <div><div id="success-list"></div><div style="margin-top:12px;" id="improve-list"></div></div>
     </div>
   </div>
-  
-  <!-- 复盘结论 -->
-  <div class="section-title">
-    <span class="icon">📝</span> 最新复盘结论
-  </div>
-  <div class="grid grid-2">
-    <div class="card">
-      <h3>✅ 做对的</h3>
-      <div id="success-list"></div>
-    </div>
-    <div class="card">
-      <h3>❌ 需要改进</h3>
-      <div id="improve-list"></div>
-    </div>
-  </div>
-  
+
 </div>
+
+<script src="static/common.js"></script>
+<script>
+document.getElementById('nav-bar').innerHTML = renderNav('jiuzhang');
+updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
 
 <script>
 // 模拟数据（实际使用时从API获取）
@@ -514,6 +343,10 @@ function renderRadarChart() {
     }
   });
 }
+
+// ── 导航 ──
+document.getElementById('nav-bar').innerHTML = renderNav('jiuzhang');
+updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
 </script>
 </body>
 </html>
