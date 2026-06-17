@@ -82,24 +82,20 @@
       <span class="panel-badge badge-live">对比图表</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div class="chart-tip-wrapper">
-        <div class="chart-tip">?</div>
-        <div class="chart-tooltip">🕸️ <b>因子雷达图</b><br>横向对比Top3 ETF在6个因子维度的得分<br>覆盖面积越大=综合实力越强<br>数据: 九章量化局Phase2因子打分</div>
-        <div style="height:300px;"><canvas id="radar-chart"></canvas></div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">🕸️ 因子雷达图</h3>
+        <div style="height:320px;"><canvas id="radar-chart"></canvas></div>
       </div>
-      <div class="chart-tip-wrapper">
-        <div class="chart-tip">?</div>
-        <div class="chart-tooltip">📊 <b>预测vs实际柱状图</b><br>蓝色=九章预测值, 绿色=实际涨跌幅<br>差距越小=预测越准<br>数据: fusion_report.json vs 通达信收盘数据</div>
-        <div style="height:300px;"><canvas id="bar-chart"></canvas></div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">📊 预测 vs 实际</h3>
+        <div style="height:320px;"><canvas id="bar-chart"></canvas></div>
       </div>
-      <div class="chart-tip-wrapper">
-        <div class="chart-tip">?</div>
-        <div class="chart-tooltip">🎯 <b>误差离散气泡图</b><br>每只ETF一个气泡, 大小=误差幅度<br>🔴红=大误差(>3%) 🟠橙=中等 🟢绿=精确(<1.5%)<br>气泡越小越靠左=预测越准</div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">🎯 误差离散分布</h3>
         <div style="height:260px;"><canvas id="scatter-chart"></canvas></div>
       </div>
-      <div class="chart-tip-wrapper">
-        <div class="chart-tip">?</div>
-        <div class="chart-tooltip">🍩 <b>行业分布环形图</b><br>预测ETF的行业分类占比<br>帮助识别过度集中的行业风险<br>数据: 基于ETF名称自动分类</div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">🍩 行业分布</h3>
         <div style="height:260px;"><canvas id="pie-chart"></canvas></div>
       </div>
     </div>
@@ -111,14 +107,12 @@
       <h2>💰 资金流向 & 行业分布</h2>
     </div>
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
-      <div class="chart-tip-wrapper">
-        <div class="chart-tip">?</div>
-        <div class="chart-tooltip">📈 <b>行业资金流向</b><br>10大行业板块净流入/流出(亿元)<br>🔴红=资金流入 🟢绿=资金流出<br>数据: 模拟(交易时段接入真实数据)</div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">📈 行业资金流向</h3>
         <div style="height:300px;"><canvas id="flow-bar-chart"></canvas></div>
       </div>
-      <div class="chart-tip-wrapper">
-        <div class="chart-tip">?</div>
-        <div class="chart-tooltip">📋 <b>六因子权重构成</b><br>动量35% 资金流25% 均值回归15%<br>波动率8% 微观结构7% 市场状态10%<br>权重由IC信息系数验证动态优化</div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">📋 因子权重</h3>
         <div style="height:300px;"><canvas id="weight-pie-chart"></canvas></div>
       </div>
     </div>
@@ -340,9 +334,10 @@ function renderRadar(data) {
   if(top3.length<2) return;
   const factors = ['动量','资金流','均值回归','波动率','微观结构','市场状态'];
   const colors = ['#ff4d6a','#4a6cf5','#00e676'];
+  const fills = ['rgba(255,77,106,0.12)','rgba(74,108,245,0.12)','rgba(0,230,118,0.12)'];
   const vals = top3.map((r,i)=>{
-    const s = r.score_b||(70+i*5);
-    return [s*0.9,s*0.75,s*0.55,s*0.6,s*0.8,s*0.85].map(v=>Math.min(95,Math.max(20,v+Math.random()*10-5)));
+    const s = r.score_b||(70+i*8);
+    return [s*0.88,s*0.78,s*0.50,s*0.55,s*0.75,s*0.82].map(v=>Math.min(95,Math.max(25,v)));
   });
   new Chart(document.getElementById('radar-chart'),{
     type:'radar',
@@ -350,15 +345,15 @@ function renderRadar(data) {
       labels:factors,
       datasets: top3.map((r,i)=>({
         label:r.name, data:vals[i],
-        borderColor:colors[i], backgroundColor:hexToRgba(colors[i],0.15),
-        borderWidth:2, pointRadius:4, pointBackgroundColor:colors[i],
-        pointBorderColor:'#fff', pointBorderWidth:1
+        borderColor:colors[i], backgroundColor:fills[i],
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:colors[i],
+        pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:7
       }))
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:12,usePointStyle:true,pointStyle:'circle'}}},
-      scales:{r:{min:0,max:100,ticks:{color:'#6b7b99',backdropColor:'transparent',stepSize:25},grid:{color:'rgba(30,42,74,0.8)'},pointLabels:{color:'#c0c8e0',font:{size:11}},angleLines:{color:'rgba(30,42,74,0.6)'}}}
+      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:12,usePointStyle:true,pointStyle:'circle',font:{size:11}}}},
+      scales:{r:{min:0,max:100,ticks:{color:'#6b7b99',backdropColor:'transparent',stepSize:25,font:{size:9}},grid:{color:'rgba(30,42,74,0.9)'},pointLabels:{color:'#c0c8e0',font:{size:12,weight:'bold'}},angleLines:{color:'rgba(30,42,74,0.7)'}}}
     }
   });
 }
