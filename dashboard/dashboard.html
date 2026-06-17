@@ -21,19 +21,19 @@
   </div>
 </nav>
 
-<div class="status-bar" id="status-bar">
+<div class="status-bar has-tip" id="status-bar" data-tip="📡 数据源状态 | 实时连接: Flask v2.0 多线程服务器 | ETF数据: 通达信TDX缓存(120s) | 预测数据: 九章量化局Phase0-5流程 | 准确率: SQLite持久化存储">
   <!-- JS填充 -->
 </div>
 
 <div class="container">
 
   <!-- ── KPI关键指标 ── -->
-  <div class="kpi-row" id="kpi-row">
+  <div class="kpi-row has-tip" id="kpi-row" data-tip="📊 KPI核心指标 | 方向准确率: 预测涨跌方向正确率 | 平均误差: 预测值与实际值偏差 | 最准/最偏: 单只ETF预测表现 | 数据来源: accuracy_history.json+SQLite">
     <!-- JS填充 -->
   </div>
 
   <!-- ── 今日复盘 ── -->
-  <div class="panel fade-in">
+  <div class="panel fade-in has-tip" data-tip="📝 每日复盘 | 对比昨日预测与实际涨跌 | 准确率趋势基于accumulated历史 | 复盘报告由九章Phase5双轨融合生成 | 数据来源: artifacts/日期/jiuzhang_report.md">
     <div class="panel-header">
       <h2>📝 今日复盘总结</h2>
       <span class="panel-badge badge-live" id="recap-date-badge">--</span>
@@ -49,7 +49,7 @@
   </div>
 
   <!-- ── 次日预测 ── -->
-  <div class="panel fade-in" style="animation-delay:0.1s;">
+  <div class="panel fade-in has-tip" style="animation-delay:0.1s" data-tip="🎯 今日预测排名 | Track A(AI定性)+Track B(数学打分)双轨融合 | 6因子: 动量35%+资金流25%+均值回归15%+波动率8%+微观7%+市场状态10% | 校准系数0.6 | 置信度: 高(80%↑)/中(55%↑)/低(30%↑)">
     <div class="panel-header">
       <h2>🎯 今日预测排名</h2>
       <span class="panel-badge badge-warn" id="pred-date-badge">--</span>
@@ -60,7 +60,7 @@
   </div>
 
   <!-- ── ETF实时排名 ── -->
-  <div class="panel fade-in" style="animation-delay:0.2s;">
+  <div class="panel fade-in has-tip" style="animation-delay:0.2s" data-tip="📈 ETF实时排名 | 数据来源: 通达信TDX缓存(120s刷新) | 非交易时段使用最近收盘缓存 | 点击表头可排序 | 完整监测62只常见ETF">
     <div class="panel-header">
       <h2>📈 ETF实时排名</h2>
       <span class="panel-badge badge-live">TOP 10</span>
@@ -76,50 +76,56 @@
   </div>
 
   <!-- ── 可视化分析 ── -->
-  <div class="panel fade-in" style="animation-delay:0.25s;">
+  <div class="panel fade-in has-tip" style="animation-delay:0.25s" data-tip="📊 多维可视化 | 雷达图: Top3 ETF六因子对比 | 柱状图: 预测vs实际涨跌 | 气泡图: 每只ETF误差分布(大小=误差量) | 环形图: 预测ETF行业分布 | 图表基于最新预测数据动态生成">
     <div class="panel-header">
       <h2>📊 多维可视化分析</h2>
       <span class="panel-badge badge-live">对比图表</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div>
-        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🕸️ 因子雷达图 (Top 3 ETF)</h3>
+      <div class="chart-tip-wrapper">
+        <div class="chart-tip">?</div>
+        <div class="chart-tooltip">🕸️ <b>因子雷达图</b><br>横向对比Top3 ETF在6个因子维度的得分<br>覆盖面积越大=综合实力越强<br>数据: 九章量化局Phase2因子打分</div>
         <div style="height:300px;"><canvas id="radar-chart"></canvas></div>
       </div>
-      <div>
-        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📊 预测 vs 实际柱状对比</h3>
+      <div class="chart-tip-wrapper">
+        <div class="chart-tip">?</div>
+        <div class="chart-tooltip">📊 <b>预测vs实际柱状图</b><br>蓝色=九章预测值, 绿色=实际涨跌幅<br>差距越小=预测越准<br>数据: fusion_report.json vs 通达信收盘数据</div>
         <div style="height:300px;"><canvas id="bar-chart"></canvas></div>
       </div>
-      <div>
-        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🎯 预测误差离散分布</h3>
+      <div class="chart-tip-wrapper">
+        <div class="chart-tip">?</div>
+        <div class="chart-tooltip">🎯 <b>误差离散气泡图</b><br>每只ETF一个气泡, 大小=误差幅度<br>🔴红=大误差(>3%) 🟠橙=中等 🟢绿=精确(<1.5%)<br>气泡越小越靠左=预测越准</div>
         <div style="height:260px;"><canvas id="scatter-chart"></canvas></div>
       </div>
-      <div>
-        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🍩 行业涨跌分布饼图</h3>
+      <div class="chart-tip-wrapper">
+        <div class="chart-tip">?</div>
+        <div class="chart-tooltip">🍩 <b>行业分布环形图</b><br>预测ETF的行业分类占比<br>帮助识别过度集中的行业风险<br>数据: 基于ETF名称自动分类</div>
         <div style="height:260px;"><canvas id="pie-chart"></canvas></div>
       </div>
     </div>
   </div>
 
   <!-- ── 资金流向 + 行业热力 ── -->
-  <div class="panel fade-in" style="animation-delay:0.28s;">
+  <div class="panel fade-in has-tip" style="animation-delay:0.28s" data-tip="💰 资金流向 & 因子权重 | 行业资金流为模拟数据(交易时段接入真实数据) | 因子权重构成: 六因子当前配比 | 权重由九章量化局Phase3 IC验证动态调整">
     <div class="panel-header">
       <h2>💰 资金流向 & 行业分布</h2>
     </div>
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
-      <div>
-        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📈 行业资金流向柱状图</h3>
+      <div class="chart-tip-wrapper">
+        <div class="chart-tip">?</div>
+        <div class="chart-tooltip">📈 <b>行业资金流向</b><br>10大行业板块净流入/流出(亿元)<br>🔴红=资金流入 🟢绿=资金流出<br>数据: 模拟(交易时段接入真实数据)</div>
         <div style="height:300px;"><canvas id="flow-bar-chart"></canvas></div>
       </div>
-      <div>
-        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📋 因子权重构成</h3>
+      <div class="chart-tip-wrapper">
+        <div class="chart-tip">?</div>
+        <div class="chart-tooltip">📋 <b>六因子权重构成</b><br>动量35% 资金流25% 均值回归15%<br>波动率8% 微观结构7% 市场状态10%<br>权重由IC信息系数验证动态优化</div>
         <div style="height:300px;"><canvas id="weight-pie-chart"></canvas></div>
       </div>
     </div>
   </div>
 
   <!-- ── 风险与看空 ── -->
-  <div class="panel fade-in" style="animation-delay:0.3s;">
+  <div class="panel fade-in has-tip" style="animation-delay:0.3s" data-tip="⚠️ 风险与看空 | 风险条分级: 🔴高风险(实心) 🟡中风险(斜线) 🟢低风险(虚线) | 看空信号: 九章量化局综合判断应卖出/减仓的ETF | 数据: 九章Phase4包青天风控审查">
     <div class="panel-header">
       <h2>⚠️ 风险提示 & 看空信号</h2>
     </div>
