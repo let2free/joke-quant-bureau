@@ -6,22 +6,19 @@
 <title>拓扑分析 - 九章量化局</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="static/theme.css">
-<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
-<nav class="header">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:1.4rem;">⬡</span>
-    <h1>九章量化局</h1>
-    <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(0,212,255,0.15);padding:2px 8px;border-radius:4px;">拓扑分析</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:20px;">
+<div class="header">
+  <h1>⬡ 九章量化局 · 拓扑分析</h1>
+  <div style="display: flex; align-items: center; gap: 20px;">
     <div class="nav-tabs" id="nav-bar"></div>
-    <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
+    <div style="font-size: 0.8rem; color: #6b7b99;">
+      <span id="clock">--:--:--</span>
+    </div>
   </div>
-</nav>
+</div>
 
-<div class="container has-tip" data-tip="🔗 拓扑分析 | 资金流向+行业热力+ETF相关性矩阵+因子IC滚动 | 风险消息关联拓扑">
+<div class="container">
   
   <!-- 核心指标 -->
   <div class="section-title">
@@ -86,15 +83,6 @@
         <canvas id="sentimentChart"></canvas>
       </div>
     </div>
-  </div>
-  
-  <!-- v2.0: ETF相关性矩阵 -->
-  <div class="section-title">
-    <span class="icon">🔥</span> ETF相关性矩阵 <span style="font-size:0.7rem;color:#6b7b99;">(v2.0新增)</span>
-  </div>
-  <div class="card">
-    <div id="correlation-matrix-topo" style="overflow-x:auto;margin-bottom:10px;"></div>
-    <div style="font-size:0.75rem;color:#6b7b99;">🔴=高正相关 🔵=低相关 | 避免同时持有高相关ETF分散风险</div>
   </div>
   
   <!-- 风险/消息关联拓扑图 -->
@@ -627,9 +615,6 @@ function renderRiskTopology() {
 }
 </script>
 <script src="static/common.js"></script>
-<script>
-document.getElementById('nav-bar').innerHTML = renderNav('topology');
-updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
-</script>
+<script>document.getElementById("nav-bar").innerHTML=renderNav("topology");</script>
 </body>
 </html>

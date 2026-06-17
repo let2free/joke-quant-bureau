@@ -6,21 +6,35 @@
     <title>龙虾协同中心 - 九章量化局</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="static/theme.css">
-<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
-    <div class="container has-tip" data-tip="🦞 龙虾协同 | Agent协作状态+协同日志 | 龙虾中枢5+1架构">
-        <nav class="header">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:1.4rem;">⬡</span>
-    <h1>九章量化局</h1>
-    <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(168,85,247,0.15);padding:2px 8px;border-radius:4px;">龙虾协同</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:20px;">
-    <div class="nav-tabs" id="nav-bar"></div>
-    <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
-  </div>
-</nav>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🦞 龙虾协同中心</h1>
+                <div class="subtitle">九章量化局 - 多Agent高度协同工作平台</div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab" onclick="window.location.href='dashboard.html'">📊 实时看板</button>
+                <button class="nav-tab" onclick="window.location.href='jiuzhang.html'">🧮 测算中心</button>
+                <button class="nav-tab" onclick="window.location.href='etf_monitor.html'">📈 ETF监测</button>
+                <button class="nav-tab" onclick="window.location.href='topology.html'">🔗 拓扑分析</button>
+                <button class="nav-tab" onclick="window.location.href='backtest.html'">📉 回测验证</button>
+                <button class="nav-tab" onclick="window.location.href='history.html'">📁 历史数据</button>
+                <button class="nav-tab active">🦞 龙虾协同</button>
+            </div>
+        </div>
+
+        <!-- Module 1: Agent Status Panel -->
+        <div class="module">
+            <div class="module-title">
+                <span>🤖 Agent状态面板（实时）</span>
+                <span class="badge" id="agents-online">加载中...</span>
+            </div>
+            <div class="agents-grid" id="agents-grid">
+                <div class="loading">正在加载Agent状态...</div>
+            </div>
+        </div>
 
         <!-- Module 2: Collaboration Log -->
         <div class="module">
@@ -504,9 +518,6 @@
         refreshAll();
     </script>
 <script src="static/common.js"></script>
-<script>
-document.getElementById('nav-bar').innerHTML = renderNav('lobster_collab');
-updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
-</script>
+<script>document.getElementById("nav-bar").innerHTML=renderNav("lobster_collab");</script>
 </body>
 </html>

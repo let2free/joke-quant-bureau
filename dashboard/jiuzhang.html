@@ -6,22 +6,19 @@
 <title>九章量化局 · 测算中心</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="static/theme.css">
-<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
-<nav class="header">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:1.4rem;">⬡</span>
-    <h1>九章量化局</h1>
-    <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(168,85,247,0.15);padding:2px 8px;border-radius:4px;">测算中心</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:20px;">
+<div class="header">
+  <h1>⬡ 九章量化局 · 测算中心</h1>
+  <div style="display: flex; align-items: center; gap: 20px;">
     <div class="nav-tabs" id="nav-bar"></div>
-    <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
+    <div style="font-size: 0.8rem; color: #6b7b99;">
+      <span id="clock">--:--:--</span>
+    </div>
   </div>
-</nav>
+</div>
 
-<div class="container has-tip" data-tip="🧮 测算中心 | 九章量化局Phase0-5完整流程 | 6因子评分+IC验证+风控审查">
+<div class="container">
   
   <!-- 流程执行状态 -->
   <div class="section-title">
@@ -369,9 +366,6 @@ function renderRadarChart() {
 }
 </script>
 <script src="static/common.js"></script>
-<script>
-document.getElementById('nav-bar').innerHTML = renderNav('jiuzhang');
-updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
-</script>
+<script>document.getElementById("nav-bar").innerHTML=renderNav("jiuzhang");</script>
 </body>
 </html>

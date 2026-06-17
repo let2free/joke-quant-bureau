@@ -6,22 +6,27 @@
 <title>ETF监测中心 - 九章量化局</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="static/theme.css">
-<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
-<nav class="header">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:1.4rem;">⬡</span>
-    <h1>九章量化局</h1>
-    <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(74,108,245,0.15);padding:2px 8px;border-radius:4px;">ETF监测</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:20px;">
+<div class="header">
+  <h1>⬡ 九章量化局 · ETF监测中心</h1>
+  <div style="display: flex; align-items: center; gap: 20px;">
     <div class="nav-tabs" id="nav-bar"></div>
-    <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <div class="data-source">
+        <span class="dot" id="data-dot"></span>
+        <span id="data-status">数据源：通达信</span>
+      </div>
+      <button class="refresh-btn" id="refresh-btn" onclick="refreshData()">
+        <span class="spinner"></span>
+        🔄 刷新数据
+      </button>
+      <span style="font-size: 0.8rem; color: #6b7b99;" id="clock">--:--:--</span>
+    </div>
   </div>
-</nav>
+</div>
 
-<div class="container has-tip" data-tip="📈 ETF监测 | 58只常见ETF实时排名+自选管理 | 数据来源: 通达信TDX缓存">
+<div class="container">
   
   <!-- 市场概览（可折叠） -->
   <div class="collapsible" id="section-metrics">
@@ -944,9 +949,6 @@ function getSector(name) {
 }
 </script>
 <script src="static/common.js"></script>
-<script>
-document.getElementById('nav-bar').innerHTML = renderNav('etf_monitor');
-updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
-</script>
+<script>document.getElementById("nav-bar").innerHTML=renderNav("etf_monitor");</script>
 </body>
 </html>

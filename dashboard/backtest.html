@@ -6,22 +6,19 @@
   <title>九章量化局 · 回测中心</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="static/theme.css">
-<style>body{background:#070b1a;color:#e0e6ff;min-height:100vh;font-family:var(--font);}*{box-sizing:border-box;margin:0;padding:0}</style>
 </head>
 <body>
-  <nav class="header">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:1.4rem;">⬡</span>
-    <h1>九章量化局</h1>
-    <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(255,77,106,0.15);padding:2px 8px;border-radius:4px;">回测验证</span>
+  <div class="header">
+    <h1>⬡ 九章量化局 · 回测中心</h1>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <div class="nav-tabs" id="nav-bar"></div>
+      <div class="right">
+        <span id="clock">--:--:--</span>
+      </div>
+    </div>
   </div>
-  <div style="display:flex;align-items:center;gap:20px;">
-    <div class="nav-tabs" id="nav-bar"></div>
-    <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
-  </div>
-</nav>
   
-  <div class="container has-tip" data-tip="📉 回测验证 | 历史数据回测+因子权重优化 | 基于累计预测数据">
+  <div class="container">
     <!-- 准确率趋势 -->
     <div class="grid grid-2">
       <div class="card">
@@ -370,9 +367,6 @@
     window.addEventListener('load', init);
   </script>
 <script src="static/common.js"></script>
-<script>
-document.getElementById('nav-bar').innerHTML = renderNav('backtest');
-updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
-</script>
+<script>document.getElementById("nav-bar").innerHTML=renderNav("backtest");</script>
 </body>
 </html>
