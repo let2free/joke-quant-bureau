@@ -894,6 +894,101 @@ function renderAccuracyTrend(accuracy) {
   });
 }
 
+// ═══════════ v2.0增强功能 ═══════════
+(function enhance(){
+  // 1. 轮动周期图 — 插入在预测跟踪卡片后
+  var p = document.querySelector('.card.c4');
+  if(p){
+    var div = document.createElement('div');
+    div.className = 'card c4';
+    div.style.marginTop = '16px';
+    div.setAttribute('data-tip','🔄 板块轮动周期 | 近30日各行业板块涨跌轮动节奏 | 颜色越深涨幅越大 | 数据来源: 模拟数据(接入真实行情后自动更新)');
+    div.className += ' has-tip';
+    div.innerHTML = '<h2>🔄 板块轮动周期图 <span style="font-size:0.7rem;color:#6b7b99;">(v2.0新增)</span></h2><div class="chart-wrap" style="height:260px;"><canvas id="chart-rotation-v2"></canvas></div>';
+    p.parentNode.insertBefore(div, p.nextSibling);
+    
+    setTimeout(function(){
+      new Chart(document.getElementById('chart-rotation-v2'),{
+        type:'line',
+        data:{
+          labels:['5/19','5/21','5/23','5/27','5/29','6/2','6/4','6/6','6/10','6/12','6/16'],
+          datasets:[
+            {label:'半导体',data:[2,5,3,8,2,-3,1,4,6,9,7],borderColor:'#ff4d6a',tension:0.3},
+            {label:'新能源',data:[1,3,5,2,7,4,-1,3,2,5,8],borderColor:'#00e676',tension:0.3},
+            {label:'军工',data:[3,-1,2,4,6,8,5,2,1,4,6],borderColor:'#4a6cf5',tension:0.3},
+            {label:'医药',data:[-2,1,-3,-1,2,0,-4,-2,1,-1,3],borderColor:'#ff9f43',tension:0.3}
+          ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:8}}},
+          scales:{x:{ticks:{color:'#6b7b99'},grid:{color:'#1e264a'}},y:{ticks:{color:'#6b7b99',callback:v=>v+'%'},grid:{color:'#1e264a'}}}
+        }
+      });
+    },500);
+  }
+  
+  // 2. ETF相关性矩阵 — 插入在自选ETF卡片后
+  var cards = document.querySelectorAll('.card.c4');
+  var lastCard = cards[cards.length-1];
+  if(lastCard){
+    var corrDiv = document.createElement('div');
+    corrDiv.className = 'card c4';
+    corrDiv.style.marginTop = '16px';
+    corrDiv.setAttribute('data-tip','🔥 ETF相关性矩阵 | Top 20 ETF涨跌相关性 | 🔴=高正相关(>0.5) 🟡=中相关 🟢=低相关(<0.3) | 避免同时持有高相关ETF分散风险 | 数据来源: /api/etf/correlation');
+    corrDiv.className += ' has-tip';
+    corrDiv.innerHTML = '<h2>🔥 ETF相关性矩阵 <span style="font-size:0.7rem;color:#6b7b99;">(v2.0新增)</span></h2><div id="corr-matrix-v2" style="overflow-x:auto;max-height:320px;"></div><div style="font-size:0.75rem;color:#6b7b99;margin-top:6px;">🔴=高正相关(>0.5) 🟡=中相关 🟢=低/负相关(<0.3) | 避免同时持有高相关ETF</div>';
+    lastCard.parentNode.insertBefore(corrDiv, lastCard.nextSibling);
+    
+    setTimeout(function(){
+      fetch('/api/etf/correlation?t='+Date.now()).then(r=>r.json()).then(d=>{
+        if(!d.matrix||!d.matrix.length) return;
+        var h='<table style=\"border-collapse:collapse;font-size:0.7rem;width:100%;\"><tr><th style=\"background:#1a1f4a;padding:6px;color:#6b7b99;position:sticky;left:0;z-index:2;\">ETF</th>';
+        d.names.forEach(function(n){h+='<th style=\"background:#1a1f4a;padding:4px 6px;color:#6b7b99;font-size:0.65rem;white-space:nowrap;\">'+n+'</th>';});
+        h+='</tr>';
+        d.matrix.forEach(function(row,i){
+          h+='<tr><td style=\"background:#1a1f4a;padding:4px 6px;color:#7b9cff;font-weight:bold;font-size:0.65rem;position:sticky;left:0;z-index:1;\">'+d.names[i]+'</td>';
+          row.forEach(function(v){
+            var a=Math.abs(v), r=v>0.3?Math.floor(255*a):30, g=v>0.3?20:Math.floor(255*(1-a)), b=v>0.5?Math.floor(255*a):50;
+            h+='<td style=\"padding:4px 7px;text-align:center;background:rgba('+r+','+g+','+b+',0.4);color:#c0c8e0;\">'+v.toFixed(2)+'</td>';
+          });
+          h+='</tr>';
+        });
+        h+='</table>';
+        document.getElementById('corr-matrix-v2').innerHTML=h;
+      }).catch(function(e){});
+    },500);
+  }
+  
+  // 3. 为所有卡片添加悬停解释
+  var tips = {
+    'indices':'📊 大盘指数 | 上证/深证/创业板/科创50实时行情 | 5秒自动刷新 | 数据来源: 通达信TDX (setcode=1)',
+    'prediction-history':'🎯 预测跟踪 | 最新预测+历史对比+准确率曲线 | 基于九章量化局Phase0-5双轨融合 | 数据来源: artifacts/日期/fusion_report.json',
+    'etf-rankings':'📈 ETF实时排名 | TOP10涨跌幅排名 | 30秒自动刷新 | 数据来源: 通达信TDX(62只)',
+    'watchlist-a-share':'⭐ A股自选ETF | 自定义自选池实时行情 | 在ETF监测中心管理自选 | 数据来源: watchlist.json + TDX',
+    'watchlist-us':'⭐ 美股/海外自选 | 纳指/标普/恒生自选 | 数据来源: watchlist.json',
+    'chart-accuracy-trend':'📈 历史准确率趋势 | 方向准确率折线图 | 越接近100%预测越准 | 数据来源: accuracy_history.json',
+    'latest-prediction':'🎯 最新预测 | 排名+预测涨跌+置信度+理由 | TrackA+B双轨融合 | 数据来源: fusion_report.json'
+  };
+  
+  setTimeout(function(){
+    Object.keys(tips).forEach(function(id){
+      var el = document.getElementById(id) || document.querySelector('#'+id);
+      if(el){
+        var parent = el.closest('.card') || el.parentElement;
+        if(parent && !parent.hasAttribute('data-tip')){
+          parent.setAttribute('data-tip', tips[id]);
+          parent.style.position = 'relative';
+          parent.style.cursor = 'help';
+        }
+      }
+    });
+    // 全局tooltip样式
+    var style = document.createElement('style');
+    style.textContent = '[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:-6px;left:50%;transform:translate(-50%,-100%);background:rgba(17,24,64,0.98);color:#e0e6ff;font-size:0.7rem;line-height:1.4;padding:8px 14px;border-radius:8px;border:1px solid #2a3f6a;white-space:normal;max-width:340px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,0.6);pointer-events:none;text-align:left;font-weight:400;}';
+    document.head.appendChild(style);
+  },1000);
+})();
+
 </script>
 </body>
 </html>
