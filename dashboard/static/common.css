@@ -1,0 +1,76 @@
+/* 九章量化局 · 共享样式 v1.0 */
+:root {
+  --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
+  --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
+  --orange: #ff9f43; --pink: #ff6b9d;
+  --bg: #0a0e27; --bg-card: #121630; --border: #1e264a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI','Microsoft YaHei',sans-serif;
+  background: var(--bg); color: #e0e6ff; min-height: 100vh;
+}
+/* ── 导航栏（统一） ── */
+.header {
+  background: linear-gradient(135deg,#1a1f4a 0%,#2a1f5a 100%);
+  border-bottom: 2px solid var(--blue); padding: 10px 20px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
+.nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
+.nav-tab {
+  padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+  border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+  text-decoration: none; transition: all 0.3s;
+}
+.nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
+.nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
+/* ── 容器 ── */
+.container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+/* ── 卡片 ── */
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; transition: border-color 0.3s;
+}
+.card:hover { border-color: var(--blue); }
+.card h2 { font-size: 1rem; color: var(--cyan); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.card h3 { font-size: 0.85rem; color: #6b7b99; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+/* ── 网格 ── */
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2,1fr); }
+.grid-3 { grid-template-columns: repeat(3,1fr); }
+.grid-4 { grid-template-columns: repeat(4,1fr); }
+/* ── 表格 ── */
+.flt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.flt th { background: #1a1f4a; color: #6b7b99; padding: 10px 8px; text-align: left; border-bottom: 2px solid var(--border); cursor: pointer; user-select: none; }
+.flt td { padding: 8px; border-bottom: 1px solid var(--border); }
+.flt tr:hover { background: #1a1f4a33; }
+.flt .up { color: var(--up); }
+.flt .down { color: var(--down); }
+/* ── 指标卡片 ── */
+.metric-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 20px; }
+.metric-card {
+  background: linear-gradient(135deg,#1a1f4a 0%,#121630 100%);
+  border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center;
+}
+.metric-value { font-size: 1.8rem; font-weight: bold; color: var(--cyan); }
+.metric-label { font-size: 0.75rem; color: #6b7b99; margin-top: 4px; }
+.metric-up { color: var(--up); } .metric-down { color: var(--down); }
+/* ── 按钮 ── */
+.btn {
+  padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem; transition: all 0.3s;
+}
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover { background: #3a5ce5; }
+.btn-danger { background: var(--up); color: white; }
+.btn-secondary { background: #1a1f4a; color: #6b7b99; border: 1px solid #2a3f6a; }
+/* ── 图表容器 ── */
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap.tall { height: 350px; }
+/* ── 通用 ── */
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.dot.ok { background: var(--down); }
+.dot.err { background: var(--up); }
+.section-title { font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.updated { font-size: 0.75rem; color: #6b7b99; margin-top: 8px; }
