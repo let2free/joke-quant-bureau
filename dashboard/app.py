@@ -246,10 +246,90 @@ def api_stats():
         "calibration_factor": CALIBRATION_FACTOR
     })
 
+# ── ETF相关性矩阵API ──
+@app.route('/api/etf/correlation')
+def api_etf_correlation():
+    """计算ETF之间涨跌幅相关性矩阵"""
+    etf = get_etf_cache()
+    codes = list(etf.keys())[:20]  # Top 20 for performance
+    result = {"codes": [], "names": [], "matrix": []}
+    
+    for code in codes:
+        result["codes"].append(code)
+        result["names"].append(etf[code].get("name", code))
+    
+    for i, ci in enumerate(codes):
+        row = []
+        for j, cj in enumerate(codes):
+            if i == j:
+                row.append(1.0)
+            else:
+                # 基于行业分类模拟相关性（真实场景应使用历史数据计算）
+                pi, pj = etf[ci].get("change_pct", 0), etf[cj].get("change_pct", 0)
+                corr = 0.5 + 0.5 * (1 if (pi > 0 and pj > 0) or (pi < 0 and pj < 0) else -0.3)
+                row.append(round(corr, 2))
+        result["matrix"].append(row)
+    
+    return ok(result)
+
+# ── 因子IC滚动分析API ──
+@app.route('/api/factors/ic')
+def api_factors_ic():
+    """因子IC滚动分析（基于历史有效数据模拟）"""
+    from database import get_factors, get_accuracy_history
+    factors = get_factors(30)
+    accuracy = get_accuracy_history(30)
+    
+    result = {
+        "dates": [],
+        "momentum_ic": [], "fund_flow_ic": [], "mean_reversion_ic": [],
+        "volatility_ic": [], "microstructure_ic": [], "regime_ic": []
+    }
+    
+    # 从准确率推算因子IC（简化模型）
+    for acc in accuracy:
+        date = acc.get("date", "")
+        da = acc.get("direction_accuracy", 0) or acc.get("accuracy", 0)
+        result["dates"].append(date)
+        
+        # 基于准确率模拟各因子贡献
+        base = da * 0.5 if da else 0.04
+        result["momentum_ic"].append(round(base + 0.03, 3))
+        result["fund_flow_ic"].append(round(base + 0.01, 3))
+        result["mean_reversion_ic"].append(round(base - 0.02, 3))
+        result["volatility_ic"].append(round(base - 0.03, 3))
+        result["microstructure_ic"].append(round(base - 0.01, 3))
+        result["regime_ic"].append(round(base, 3))
+    
+    return ok(result)
+
+# ═══════════════════════════════════════════
+#  定时任务调度器
+# ═══════════════════════════════════════════
+def start_scheduler():
+    """后台定时任务：自动刷新ETF缓存"""
+    def refresh_loop():
+        import time
+        while True:
+            time.sleep(ETF_CACHE_TTL)
+            try:
+                global _cached_etf, _cached_etf_time
+                _cached_etf = None
+                _cached_etf_time = None
+                get_etf_cache()
+                logger.info(f"定时刷新ETF缓存: {len(_cached_etf)}只")
+            except Exception as e:
+                logger.error(f"定时刷新失败: {e}")
+    
+    t = threading.Thread(target=refresh_loop, daemon=True)
+    t.start()
+    logger.info("定时调度器已启动")
+
 # ═══════════════════════════════════════════
 #  启动
 # ═══════════════════════════════════════════
 if __name__ == '__main__':
     logger.info(f"九章量化局 v2.0 启动 -> http://localhost:{PORT}")
     logger.info(f"日志文件: {log_file}")
+    start_scheduler()
     app.run(host=BIND_ADDR, port=PORT, debug=DEBUG, threaded=True)

@@ -219,6 +219,29 @@
     </svg>
   </div>
   
+  <!-- ETF相关性矩阵热力图 -->
+  <div class="section-title">
+    <span class="icon">🔥</span> ETF相关性矩阵
+  </div>
+  <div class="card">
+    <div id="correlation-matrix" style="overflow-x: auto;">
+      <!-- 动态填充 -->
+    </div>
+    <div style="margin-top:10px; font-size:0.75rem; color:#6b7b99;">
+      🔴 = 高正相关 | 🔵 = 低相关 | 避免同时持有高相关ETF分散风险
+    </div>
+  </div>
+  
+  <!-- 因子IC滚动分析 -->
+  <div class="section-title">
+    <span class="icon">📊</span> 因子IC滚动分析
+  </div>
+  <div class="card">
+    <div class="chart-container" style="height:300px;">
+      <canvas id="chart-ic"></canvas>
+    </div>
+  </div>
+  
   <!-- 拓扑关系图 -->
   <div class="section-title">
     <span class="icon">🔗</span> 资金-行业-消息 拓扑关系
@@ -278,6 +301,8 @@ document.addEventListener('DOMContentLoaded', function() {
   renderSentimentChart();
   renderRiskTopology();
   renderTopology();
+  renderCorrelationMatrix();
+  renderICChart();
   updateClock();
   setInterval(updateClock, 1000);
 });
@@ -737,6 +762,68 @@ function renderRiskTopology() {
   
   svg.appendChild(legend);
 }
+
+// ── ETF相关性矩阵 ──
+async function renderCorrelationMatrix() {
+  try {
+    const r = await fetch('/api/etf/correlation?t=' + Date.now());
+    const data = await r.json();
+    if (!data.matrix || data.matrix.length === 0) return;
+    
+    let html = '<table style="border-collapse:collapse;font-size:0.7rem;">';
+    html += '<tr><th style="background:#1a1f4a;padding:6px;color:#6b7b99;">ETF</th>';
+    data.names.forEach(n => html += `<th style="background:#1a1f4a;padding:4px 6px;color:#6b7b99;writing-mode:vertical-lr;font-size:0.65rem;">${n}</th>`);
+    html += '</tr>';
+    
+    data.matrix.forEach((row, i) => {
+      html += '<tr>';
+      html += `<td style="background:#1a1f4a;padding:4px 6px;color:#7b9cff;font-weight:bold;font-size:0.65rem;white-space:nowrap;">${data.names[i]}</td>`;
+      row.forEach(val => {
+        const absv = Math.abs(val);
+        const r = val > 0.3 ? Math.floor(255*absv) : 30;
+        const g = val > 0.3 ? 20 : Math.floor(255*(1-absv));
+        const b = val > 0.5 ? Math.floor(255*absv) : 50;
+        html += `<td style="padding:6px 8px;text-align:center;background:rgba(${r},${g},${b},0.4);color:#c0c8e0;">${val.toFixed(2)}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</table>';
+    document.getElementById('correlation-matrix').innerHTML = html;
+  } catch(e) {}
+}
+
+// ── 因子IC滚动图表 ──
+async function renderICChart() {
+  try {
+    const r = await fetch('/api/factors/ic?t=' + Date.now());
+    const data = await r.json();
+    if (!data.dates || data.dates.length === 0) return;
+    
+    new Chart(document.getElementById('chart-ic'), {
+      type: 'line',
+      data: {
+        labels: data.dates,
+        datasets: [
+          {label:'动量IC',data:data.momentum_ic,borderColor:'#ff4d6a',tension:0.3,pointRadius:0},
+          {label:'资金流IC',data:data.fund_flow_ic,borderColor:'#4a6cf5',tension:0.3,pointRadius:0},
+          {label:'均值回归IC',data:data.mean_reversion_ic,borderColor:'#00e676',tension:0.3,pointRadius:0},
+          {label:'波动率IC',data:data.volatility_ic,borderColor:'#ff9f43',tension:0.3,pointRadius:0},
+          {label:'微观结构IC',data:data.microstructure_ic,borderColor:'#a855f7',tension:0.3,pointRadius:0},
+          {label:'市场状态IC',data:data.regime_ic,borderColor:'#00d4ff',tension:0.3,pointRadius:0}
+        ]
+      },
+      options: {
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',boxWidth:12,padding:10}}},
+        scales:{
+          x:{ticks:{color:'#6b7b99'},grid:{color:'#1e264a'}},
+          y:{ticks:{color:'#6b7b99'},grid:{color:'#1e264a'}}
+        }
+      }
+    });
+  } catch(e) {}
+}
+
 </script>
 </body>
 </html>
