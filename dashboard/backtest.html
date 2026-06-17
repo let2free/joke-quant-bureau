@@ -89,12 +89,97 @@
     @media (max-width: 768px) {
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
     }
-  </style>
+  
+  
+    .card { padding: 8px !important; }
+    table { font-size: 0.65rem; }
+  }
+
+  /* ══ 手机端导航适配 ══ */
+  .hamburger { display: none; background: none; border: none; color: #7b9cff; font-size: 1.6rem; cursor: pointer; padding: 4px 8px; z-index: 200; line-height: 1; }
+  .nav-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 150; }
+  .nav-overlay.show { display: block; }
+  .nav-mobile-wrap { display: contents; }
+  @media (max-width: 900px) {
+    .header {
+      position: relative;
+      flex-wrap: wrap;
+      padding: 8px 12px;
+      justify-content: flex-start;
+      gap: 0;
+    }
+    .hamburger { display: block; position: absolute; right: 12px; top: 10px; }
+    .nav-mobile-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+      gap: 0;
+    }
+    .nav-mobile-wrap.show { display: flex; }
+    .nav-tabs {
+      display: flex !important;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+      padding: 8px 0;
+      width: 100%;
+    }
+    .nav-tab {
+      width: 100%;
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+    }
+    .header .right {
+      font-size: 0.7rem;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 6px 0;
+    }
+    .grid { padding: 8px; gap: 10px; }
+    .container { padding: 8px !important; }
+    .card, .panel, .section { padding: 10px !important; }
+    .card h2, .panel h2, .module-title { font-size: 0.75rem; }
+    table.flt, table { font-size: 0.7rem; }
+    table.flt th, table.flt td, table th, table td { padding: 3px 4px; }
+    .idx-row { font-size: 0.8rem; padding: 5px 0; }
+    .chart-wrap { height: 180px; }
+    .chart-wrap.tall { height: 220px; }
+  }
+  @media (max-width: 480px) {
+    .header h1 { font-size: 0.95rem; }
+    .card { padding: 8px !important; }
+    table.flt, table { font-size: 0.65rem; }
+    .factor-tags { gap: 4px; }
+    .tag { padding: 3px 6px; font-size: 0.7rem; }
+  }
+
+
+/* ── v3.2 移动端表格溢出修复 ── */
+@media (max-width: 768px) {
+    .table-wrap, table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        max-width: 100vw;
+    }
+    .table-wrap table {
+        display: table;
+        min-width: 600px;
+    }
+}
+
+</style>
 </head>
 <body>
-  <div class="header">
+  <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+<div class="header">
     <h1>⬡ 九章量化局 · 回测中心</h1>
-    <div style="display: flex; align-items: center; gap: 20px;">
+  <button class="hamburger" id="hamburgerBtn" onclick="toggleNav()">☰</button>
+    <div class="nav-mobile-wrap" style="display: flex; align-items: center; gap: 20px;">
       <div class="nav-tabs">
         <a href="dashboard.html" class="nav-tab">📊 实时看板</a>
         <a href="jiuzhang.html" class="nav-tab">🧮 测算中心</a>
@@ -457,6 +542,15 @@
     
     // 页面加载时初始化
     window.addEventListener('load', init);
-  </script>
+  
+// ── 手机导航切换 ──
+function toggleNav() {
+  var w = document.querySelector('.nav-mobile-wrap');
+  if (w) w.classList.toggle('show');
+  var o = document.getElementById('navOverlay');
+  if (o) o.classList.toggle('show');
+}
+
+</script>
 </body>
 </html>

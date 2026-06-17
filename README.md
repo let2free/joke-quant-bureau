@@ -2,7 +2,7 @@
 
 > AI + 数学双轨制量化预测系统 —— 开源协同开发工作组
 
-![Version](https://img.shields.io/badge/version-2.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Python](https://img.shields.io/badge/python-3.11+-blue) ![Status](https://img.shields.io/badge/status-beta-orange)
+![Version](https://img.shields.io/badge/version-3.2-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Python](https://img.shields.io/badge/python-3.11+-blue) ![Status](https://img.shields.io/badge/status-beta-orange)
 
 ---
 
@@ -94,16 +94,21 @@ python dashboard_server.py
 - [x] 双轨制预测架构（AI + 数学）
 - [x] 9个Agent协同工作台
 - [x] L0流动性 + L4b微观结构检测
-- [x] 实时可视化看板（7种图表）
+- [x] 实时可视化看板（7种图表 + 异常预警）
 - [x] 自动复盘迭代机制
 - [x] 因子打分模型（6大类、20+子因子）
+- [x] 真实K线回测系统（12只ETF + 网格搜索权重优化）
+- [x] FOMC实时利率概率（CME FedWatch数据）
+- [x] SQLite数据持久化（替代JSON文件存储）
+- [x] 多线程看板服务器（ThreadingMixIn + 日志轮转）
+- [x] 移动端响应式表格（横向滚动适配）
+- [x] 3个Calendar自动化日程（盘前/收盘/周报）
 
 ### 🔄 进行中
 
-- [ ] Backtrader回测系统搭建
-- [ ] 因子权重历史校准（需3-4周数据积累）
-- [ ] 8种补充图表开发（K线图、热力图等）
-- [ ] 豆宝在线程序（Coze云端版本）
+- [ ] 新闻情绪接入（财经头条API）
+- [ ] 云端部署（Cloudflare Tunnel持久化）
+- [ ] 元宝BOT AI模型集成
 
 ### 📋 待开发
 

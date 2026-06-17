@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>九章量化局 · 实时看板 v2</title>
+<title>九章量化局 · 实时看板 v3.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -110,13 +111,99 @@
     .c4, .c3, .c2 { grid-column: span 1; }
     .agent-grid { grid-template-columns: repeat(2, 1fr); }
   }
+
+  
+    .card { padding: 8px; }
+    table.flt { font-size: 0.65rem; }
+    .factor-tags { gap: 4px; }
+    .tag { padding: 3px 6px; font-size: 0.7rem; }
+  }
+  /* ══ 手机端导航适配 ══ */
+  .hamburger { display: none; background: none; border: none; color: #7b9cff; font-size: 1.6rem; cursor: pointer; padding: 4px 8px; z-index: 200; line-height: 1; }
+  .nav-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 150; }
+  .nav-overlay.show { display: block; }
+  .nav-mobile-wrap { display: contents; }
+  @media (max-width: 900px) {
+    .header {
+      position: relative;
+      flex-wrap: wrap;
+      padding: 8px 12px;
+      justify-content: flex-start;
+      gap: 0;
+    }
+    .hamburger { display: block; position: absolute; right: 12px; top: 10px; }
+    .nav-mobile-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+      gap: 0;
+    }
+    .nav-mobile-wrap.show { display: flex; }
+    .nav-tabs {
+      display: flex !important;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+      padding: 8px 0;
+      width: 100%;
+    }
+    .nav-tab {
+      width: 100%;
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+    }
+    .header .right {
+      font-size: 0.7rem;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 6px 0;
+    }
+    .grid { padding: 8px; gap: 10px; }
+    .container { padding: 8px !important; }
+    .card, .panel, .section { padding: 10px !important; }
+    .card h2, .panel h2, .module-title { font-size: 0.75rem; }
+    table.flt, table { font-size: 0.7rem; }
+    table.flt th, table.flt td, table th, table td { padding: 3px 4px; }
+    .idx-row { font-size: 0.8rem; padding: 5px 0; }
+    .chart-wrap { height: 180px; }
+    .chart-wrap.tall { height: 220px; }
+  }
+  @media (max-width: 480px) {
+    .header h1 { font-size: 0.95rem; }
+    .card { padding: 8px !important; }
+    table.flt, table { font-size: 0.65rem; }
+    .factor-tags { gap: 4px; }
+    .tag { padding: 3px 6px; font-size: 0.7rem; }
+  }
+
+
+/* ── v3.2 移动端表格溢出修复 ── */
+@media (max-width: 768px) {
+    .table-wrap, table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        max-width: 100vw;
+    }
+    .table-wrap table {
+        display: table;
+        min-width: 600px;
+    }
+}
+
 </style>
 </head>
 <body>
 
+<div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
 <div class="header">
-  <h1>⬡ 九章量化局 · 实时看板 v2</h1>
-  <div style="display: flex; align-items: center; gap: 20px;">
+  <h1>⬡ 九章量化局 · 实时看板 v3.0</h1>
+  <button class="hamburger" id="hamburgerBtn" onclick="toggleNav()">☰</button>
+  <div class="nav-mobile-wrap" style="display: flex; align-items: center; gap: 20px;">
     <div class="nav-tabs">
       <a href="dashboard.html" class="nav-tab active">📊 实时看板</a>
       <a href="jiuzhang.html" class="nav-tab">🧮 测算中心</a>
@@ -374,7 +461,7 @@ function initCharts() {
   charts.fomc = new Chart(document.getElementById('chart-fomc'), {
     type: 'doughnut',
     data: {
-      labels: ['鸽派', '中性', '鹰派'],
+      labels: ['维持不变', '加息', '降息'],
       datasets: [{
         data: [40, 35, 25],
         backgroundColor: ['#00e676', '#ffc400', '#ff4d6a'],
@@ -563,8 +650,8 @@ function render(data) {
   }
 
   // FOMC doughnut
-  const fp = data.factors?.fomc_prob || {dove:40,neutral:35,hawk:25};
-  charts.fomc.data.datasets[0].data = [fp.dove, fp.neutral, fp.hawk];
+  const fp = data.factors?.fomc_prob || {hold:98.5, hike:1.5, cut:0.0};
+  charts.fomc.data.datasets[0].data = [fp.hold, fp.hike, fp.cut];
   charts.fomc.update('none');
 
   // 因子IC
@@ -577,16 +664,10 @@ function render(data) {
   charts.ic.data.datasets[0].data = icData.map(d => d.val);
   charts.ic.update('none');
 
-  // 波动率趋势（近7日）
-  const volLabels = ['6/9','6/10','6/11','6/12','6/13','6/15','6/16'];
-  const volSSE = [1.8, 2.1, 1.9, 1.7, 2.3, 3.5, 2.8];
-  const volChi = [2.2, 2.5, 2.8, 2.1, 2.6, 4.2, 3.5];
-  const volSTAR = [2.0, 2.3, 2.5, 1.9, 2.4, 4.0, 3.2];
-  charts.vol.data.labels = volLabels;
-  charts.vol.data.datasets[0].data = volSSE;
-  charts.vol.data.datasets[1].data = volChi;
-  charts.vol.data.datasets[2].data = volSTAR;
-  charts.vol.update('none');
+  // 波动率趋势（从API获取真实数据）
+  loadVolatilityTrend();
+  // 因子趋势（从API获取真实数据）
+  loadFactorTrend();
 
   // 资金流向
   const flowLabels = etfList.map(v => v.name);
@@ -595,14 +676,7 @@ function render(data) {
   charts.flow.data.datasets[0].data = flowData;
   charts.flow.update('none');
 
-  // 因子趋势（近7日）
-  const trendLabels = volLabels;
-  charts.trend.data.labels = trendLabels;
-  charts.trend.data.datasets[0].data = [45, 52, 55, 48, 60, 78, 85];
-  charts.trend.data.datasets[1].data = [30, 35, 38, 32, 40, 55, 62];
-  charts.trend.data.datasets[2].data = [20, 22, 25, 18, 28, 42, 48];
-  charts.trend.data.datasets[3].data = [35, 30, 28, 32, 25, 18, 15];
-  charts.trend.update('none');
+  // 因子趋势（已改为API获取）
 
   // 因子状态
   const facEl = document.getElementById('factors');
@@ -625,8 +699,9 @@ function render(data) {
   const adv = [];
   const topEtf = etfList[0];
   if (topEtf && topEtf.chg_pct > 3) adv.push(`⚠️ ${topEtf.name} 涨幅+${topEtf.chg_pct.toFixed(2)}%，注意回调`);
-  if (fp.hawk >= 30) adv.push(`🔴 FOMC鹰派概率${fp.hawk}%，科技ETF减至5成`);
-  else adv.push(`🟢 FOMC鸽派概率${fp.dove}%，可持仓`);
+  if (fp.hike >= 20) adv.push(`🔴 年底加息概率${fp.hike}%，科技ETF减至5成`);
+  else adv.push(`🟢 6月维持不变概率${fp.hold}%，可持仓`);
+  if (data.factors?.fomc_note) adv.push(`📊 ${data.factors.fomc_note}`);
   if ((f.L4b_events||[]).length) adv.push(`📅 有指数调仓事件，相关ETF提前布局`);
   adEl.innerHTML = adv.map(a => `<div class="item">${a}</div>`).join('');
 
@@ -744,6 +819,39 @@ setInterval(fetchData, 15000);
 setInterval(loadWatchlist, 30000);
 setInterval(loadRankings, 30000);
 setInterval(loadPredictions, 60000);
+
+// ── 波动率趋势（异步获取真实数据）──
+async function loadVolatilityTrend() {
+  try {
+    const r = await fetch('/api/trends/volatility?t=' + Date.now());
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.dates && d.dates.length > 0) {
+      charts.vol.data.labels = d.dates;
+      charts.vol.data.datasets[0].data = d['上证指数'] || [];
+      charts.vol.data.datasets[1].data = d['创业板指'] || [];
+      charts.vol.data.datasets[2].data = d['科创50'] || [];
+      charts.vol.update('none');
+    }
+  } catch(e) {}
+}
+
+// ── 因子趋势（异步获取真实数据）──
+async function loadFactorTrend() {
+  try {
+    const r = await fetch('/api/trends/factors?t=' + Date.now());
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.dates && d.dates.length > 0) {
+      charts.trend.data.labels = d.dates;
+      charts.trend.data.datasets[0].data = d.momentum || [];
+      charts.trend.data.datasets[1].data = d.fund_flow || [];
+      charts.trend.data.datasets[2].data = d.microstructure || [];
+      charts.trend.data.datasets[3].data = d.mean_reversion || [];
+      charts.trend.update('none');
+    }
+  } catch(e) {}
+}
 
 // ── 加载预测数据 ──
 async function loadPredictions() {
@@ -988,6 +1096,14 @@ function renderAccuracyTrend(accuracy) {
     document.head.appendChild(style);
   },1000);
 })();
+
+// ── 手机导航切换 ──
+function toggleNav() {
+  var w = document.querySelector('.nav-mobile-wrap');
+  if (w) w.classList.toggle('show');
+  var o = document.getElementById('navOverlay');
+  if (o) o.classList.toggle('show');
+}
 
 </script>
 </body>

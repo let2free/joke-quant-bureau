@@ -61,7 +61,14 @@ Thumbs.db
 
 # 项目特定
 data/historical/  # 历史数据不提交（太大）
-dashboard/access.log  # 访问日志不提交
+dashboard/access.log*  # 访问日志不提交
+dashboard/jiuzhang.db  # SQLite运行时DB不提交（含WAL）
+dashboard/jiuzhang.db-*
+dashboard/jiuzhang.db-shm
+dashboard/jiuzhang.db-wal
+dashboard/cache/  # 缓存目录
+dashboard/backtest_results/  # 回测结果目录
+dashboard/__pycache__/
 *.json.bak  # JSON备份文件
 
 # WorkBuddy

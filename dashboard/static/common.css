@@ -74,3 +74,105 @@ body {
 .dot.err { background: var(--up); }
 .section-title { font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
 .updated { font-size: 0.75rem; color: #6b7b99; margin-top: 8px; }
+
+/* ══ 手机端自适应 v1.0 ══ */
+
+/* ── 汉堡按钮（手机端显示） ── */
+.hamburger {
+  display: none; background: none; border: none; cursor: pointer;
+  padding: 6px; z-index: 200;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px; margin: 5px 0;
+  background: #7b9cff; border-radius: 2px;
+  transition: all 0.3s ease;
+}
+.hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+/* ── 手机端遮罩 ── */
+.nav-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 149; backdrop-filter: blur(2px);
+}
+.nav-overlay.active { display: block; }
+
+/* ── 响应式断点 ── */
+@media (max-width: 1200px) {
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  /* 导航：汉堡菜单 */
+  .header {
+    flex-wrap: wrap; padding: 8px 12px; gap: 4px;
+  }
+  .header h1 { font-size: 0.95rem; }
+  .hamburger { display: block; }
+  .nav-tabs {
+    position: fixed; top: 0; right: -280px; width: 260px; height: 100vh;
+    flex-direction: column; background: #121630; padding: 60px 16px 16px;
+    gap: 6px; z-index: 150; transition: right 0.3s ease;
+    border-left: 1px solid #2a3f6a; overflow-y: auto;
+  }
+  .nav-tabs.open { right: 0; }
+  .nav-tab {
+    padding: 10px 14px; font-size: 0.88rem; width: 100%; text-align: left;
+  }
+  .header .right { display: none; }
+
+  /* 容器 */
+  .container { padding: 10px; }
+
+  /* 网格全单列 */
+  .grid, .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .metric-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  /* 卡片 */
+  .card, .panel { padding: 12px; }
+
+  /* 表格横向滚动 */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .flt, .data-table { min-width: 480px; font-size: 0.78rem; }
+  .flt th, .flt td, .data-table th, .data-table td { padding: 6px; }
+
+  /* 指标卡片 */
+  .metric-value { font-size: 1.4rem; }
+  .metric-card { padding: 12px; }
+
+  /* KPI */
+  .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi-card { padding: 12px; }
+  .kpi-card .kpi-value { font-size: 1.6rem; }
+
+  /* 预测排名 */
+  .predict-rank { grid-template-columns: 1fr; }
+
+  /* 图表 */
+  .chart-wrap.tall { height: 240px; }
+  .chart-box { height: 200px; }
+
+  /* 按钮 */
+  .btn { padding: 6px 12px; font-size: 0.8rem; }
+
+  /* 状态栏 */
+  .status-bar { flex-wrap: wrap; gap: 8px; padding: 6px 12px; font-size: 0.7rem; }
+
+  /* 标题 */
+  .section-title { font-size: 0.95rem; margin: 12px 0 10px; }
+}
+
+@media (max-width: 480px) {
+  .header h1 { font-size: 0.85rem; letter-spacing: 1px; }
+  .metric-grid { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: 1fr; }
+  .kpi-card .kpi-value { font-size: 1.3rem; }
+  .metric-value { font-size: 1.2rem; }
+  .container { padding: 8px; }
+}

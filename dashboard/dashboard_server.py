@@ -1,7 +1,9 @@
 """
-九章量化局 · 实时看板服务器 v2.0
+九章量化局 · 实时看板服务器 v3.2
 绑定 0.0.0.0，支持局域网多设备访问
-新增：龙虾协同中心API接口
+v3.0: 接入腾讯行情API，真实数据+真实因子计算
+v3.1: 回测真实K线、FOMC FedWatch、异常预警、趋势API
+v3.2: 线程池、日志轮转、SQLite持久化、移动端表格溢出修复
 """
 
 import http.server
@@ -10,6 +12,7 @@ import json
 import os
 import threading
 import time
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -20,11 +23,27 @@ from backtest import load_backtest_accuracy, run_factor_optimization, run_backte
 # 导入数据导入模块
 from data_importer import importer
 
-# 导入ETF数据模块
+# 导入ETF数据模块（v4.0 + data_fetcher）
 from etf_data import (
     generate_etf_data, calculate_rankings, get_watchlist_data,
     add_to_watchlist, remove_from_watchlist, get_etf_detail,
-    get_sector_etfs, load_watchlist, search_etfs
+    get_sector_etfs, load_watchlist, search_etfs, calc_track_b_score
+)
+from data_fetcher import fetch_realtime_quotes, fetch_kline, fetch_indices, clear_cache
+from fusion_engine import run_fusion, rank_by_track_b
+from db import (
+    init_db, migrate_from_json,
+    get_accuracy_history as db_accuracy_history,
+    save_accuracy_history as db_save_accuracy,
+    get_collab_log as db_collab_log,
+    append_collab_log as db_append_collab,
+    get_agents_status as db_agents_status,
+    save_agents_status as db_save_agents,
+    get_conflicts as db_conflicts,
+    save_conflicts as db_save_conflicts,
+    get_artifacts as db_artifacts,
+    save_artifacts as db_save_artifacts,
+    add_accuracy, get_db_stats,
 )
 
 # 配置
@@ -33,6 +52,16 @@ BIND_ADDR = "0.0.0.0"
 DATA_DIR = Path(__file__).parent
 DATA_FILE = DATA_DIR / "data.json"
 LOG_FILE = DATA_DIR / "access.log"
+LOG_MAX_SIZE = 2 * 1024 * 1024  # 2MB轮转
+LOG_BACKUP_COUNT = 3
+
+# ── 日志轮转配置 ──────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+_server_logger = logging.getLogger("dashboard")
 
 # 新数据文件
 AGENTS_STATUS_FILE = DATA_DIR / "agents_status.json"
@@ -109,99 +138,71 @@ def load_data():
 
 
 def load_agents_status():
-    """读取Agent状态"""
-    if AGENTS_STATUS_FILE.exists():
-        try:
-            with open(AGENTS_STATUS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return DEFAULT_AGENTS_STATUS.copy()
+    """读取Agent状态（SQLite）"""
+    return db_agents_status()
 
 
 def save_agents_status(data):
-    """保存Agent状态"""
-    with open(AGENTS_STATUS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """保存Agent状态（SQLite）"""
+    db_save_agents(data)
 
 
 def load_collab_log():
-    """读取协同日志（JSONL格式）"""
-    entries = []
-    if COLLAB_LOG_FILE.exists():
-        try:
-            with open(COLLAB_LOG_FILE, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        entries.append(json.loads(line))
-        except Exception:
-            pass
-    return entries
+    """读取协同日志（SQLite）"""
+    return db_collab_log()
 
 
 def append_collab_log(entry):
-    """追加一条协同日志"""
-    with open(COLLAB_LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    """追加一条协同日志（SQLite）"""
+    db_append_collab(entry)
 
 
 def load_artifacts():
-    """读取分析产物"""
-    if ARTIFACTS_FILE.exists():
-        try:
-            with open(ARTIFACTS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+    """读取分析产物（SQLite）"""
+    return db_artifacts()
 
 
 def save_artifacts(data):
-    """保存分析产物"""
-    with open(ARTIFACTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """保存分析产物（SQLite）"""
+    db_save_artifacts(data)
 
 
 def load_accuracy_history():
-    """读取准确率历史"""
-    if ACCURACY_FILE.exists():
-        try:
-            with open(ACCURACY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return DEFAULT_ACCURACY_HISTORY.copy()
+    """读取准确率历史（SQLite）"""
+    data = db_accuracy_history()
+    return data if data else DEFAULT_ACCURACY_HISTORY.copy()
 
 
 def save_accuracy_history(data):
-    """保存准确率历史"""
-    with open(ACCURACY_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """保存准确率历史（SQLite）"""
+    db_save_accuracy(data)
 
 
 def load_conflicts():
-    """读取冲突记录"""
-    if CONFLICTS_FILE.exists():
-        try:
-            with open(CONFLICTS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return []
+    """读取冲突记录（SQLite）"""
+    return db_conflicts()
 
 
 def save_conflicts(data):
-    """保存冲突记录"""
-    with open(CONFLICTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """保存冲突记录（SQLite）"""
+    db_save_conflicts(data)
 
 
 def log_access(client_ip, path):
-    """记录访问日志"""
+    """记录访问日志（带轮转：超过2MB自动轮转，保留3个备份）"""
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{ts}] {client_ip} -> {path}\n"
     try:
+        # 检查是否需要轮转
+        if LOG_FILE.exists() and LOG_FILE.stat().st_size > LOG_MAX_SIZE:
+            for i in range(LOG_BACKUP_COUNT - 1, 0, -1):
+                old = DATA_DIR / f"access.log.{i}"
+                new = DATA_DIR / f"access.log.{i + 1}"
+                if old.exists():
+                    old.rename(new)
+            backup = DATA_DIR / "access.log.1"
+            LOG_FILE.rename(backup)
+            _server_logger.info(f"访问日志已轮转 → {backup}")
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(line)
     except Exception:
@@ -585,6 +586,262 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                                 pass
             self.wfile.write(json.dumps(latest, ensure_ascii=False).encode("utf-8"))
 
+        # ── 新增：实时数据API ──────────────────────────────────────
+
+        # API: 主要指数实时行情
+        elif path == "/api/market/indices":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                result = fetch_indices(use_cache=True)
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"data": {}, "meta": {"error": str(e)}}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 批量实时行情（GET参数codes=sh510300,sh588000,...）
+        elif path == "/api/market/realtime":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            params = {}
+            if "?" in self.path:
+                for pair in self.path.split("?")[1].split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        params[k] = v
+            codes_str = params.get("codes", "")
+            if codes_str:
+                codes = [c.strip() for c in codes_str.split(",") if c.strip()]
+                result = fetch_realtime_quotes(codes, use_cache=True)
+            else:
+                # 返回全部监控ETF
+                all_data = generate_etf_data()
+                result = {"data": {k: v for k, v in all_data.items()}, "meta": {"count": len(all_data)}}
+            self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+
+        # API: K线数据（GET参数code=sh510300&days=60）
+        elif path == "/api/market/kline":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            params = {}
+            if "?" in self.path:
+                for pair in self.path.split("?")[1].split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        params[k] = v
+            code = params.get("code", "sh510300")
+            days = int(params.get("days", "60"))
+            result = fetch_kline(code, days, use_cache=True)
+            self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+
+        # API: 融合报告（实时计算）
+        elif path == "/api/fusion/report":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                report = run_fusion(use_real_data=True)
+                # 保存到artifacts
+                report_dir = DATA_DIR / "artifacts" / datetime.now().strftime("%Y-%m-%d")
+                report_dir.mkdir(parents=True, exist_ok=True)
+                with open(report_dir / "fusion_report.json", "w", encoding="utf-8") as f:
+                    json.dump(report, f, ensure_ascii=False, indent=2)
+                self.wfile.write(json.dumps(report, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 因子详情（GET参数code=510300 或 不传返回全部）
+        elif path == "/api/fusion/factors":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            params = {}
+            if "?" in self.path:
+                for pair in self.path.split("?")[1].split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        params[k] = v
+            code = params.get("code", "")
+            all_data = generate_etf_data()
+            if code:
+                etf = all_data.get(code, {})
+                factors = {
+                    "code": code,
+                    "name": etf.get("name", ""),
+                    "factors": {k: v for k, v in etf.items() if k.startswith("factor_")},
+                    "score_b": calc_track_b_score(etf),
+                }
+                self.wfile.write(json.dumps(factors, ensure_ascii=False).encode("utf-8"))
+            else:
+                factors_list = []
+                for c, etf in all_data.items():
+                    factors_list.append({
+                        "code": c,
+                        "name": etf.get("name", ""),
+                        "category": etf.get("category", ""),
+                        "factors": {k: v for k, v in etf.items() if k.startswith("factor_")},
+                        "score_b": calc_track_b_score(etf),
+                    })
+                factors_list.sort(key=lambda x: x["score_b"], reverse=True)
+                self.wfile.write(json.dumps(factors_list, ensure_ascii=False).encode("utf-8"))
+
+        # API: 清除数据缓存（强制刷新）
+        elif path == "/api/cache/clear":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            clear_cache()
+            self.wfile.write(json.dumps({"success": True, "message": "缓存已清除"}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 异常预警
+        elif path == "/api/alerts":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                all_data = generate_etf_data()
+                alerts = []
+                for code, etf in all_data.items():
+                    chg = etf.get("change_pct", 0)
+                    vol = etf.get("turnover_rate", 0)
+                    score_b = calc_track_b_score(etf)
+                    if abs(chg) > 5:
+                        alerts.append({"code": code, "name": etf.get("name", ""), "type": "extreme_move",
+                                        "message": f"{'暴涨' if chg > 0 else '暴跌'} {chg:+.2f}%", "severity": "high"})
+                    elif vol > 15:
+                        alerts.append({"code": code, "name": etf.get("name", ""), "type": "high_turnover",
+                                        "message": f"换手率 {vol:.1f}%", "severity": "medium"})
+                    elif score_b < 30:
+                        alerts.append({"code": code, "name": etf.get("name", ""), "type": "weak_score",
+                                        "message": f"TrackB得分仅{score_b:.0f}", "severity": "low"})
+                indices = fetch_indices(use_cache=True)
+                for name, idx in indices.get("data", {}).items():
+                    if abs(idx.get("change_pct", 0)) > 3:
+                        alerts.append({"code": name, "name": name, "type": "index_extreme",
+                                        "message": f"{name} {'涨' if idx['change_pct'] > 0 else '跌'} {idx['change_pct']:+.2f}%",
+                                        "severity": "high"})
+                self.wfile.write(json.dumps({"alerts": alerts, "count": len(alerts),
+                    "updated_at": datetime.now().isoformat()}, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"alerts": [], "error": str(e)}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 波动率趋势（基于真实K线）
+        elif path == "/api/trends/volatility":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                from backtest import get_all_kline_data
+                kline = get_all_kline_data(["510300", "159915", "588000"], days=30)
+                dates = []
+                sse_vol = []
+                cyb_vol = []
+                kc_vol = []
+                import statistics
+                for code, key in [("510300", sse_vol), ("159915", cyb_vol), ("588000", kc_vol)]:
+                    if code in kline:
+                        data = kline[code]
+                        for i in range(1, len(data)):
+                            if i == 1:
+                                dates.append(data[i]["date"][-5:])
+                            rets = []
+                            start = max(0, i - 5)
+                            for j in range(start, i):
+                                if data[j]["close"] > 0:
+                                    rets.append((data[j+1]["close"] - data[j]["close"]) / data[j]["close"])
+                            if rets:
+                                key.append(round(statistics.stdev(rets) * 100, 2) if len(rets) > 1 else 0)
+                self.wfile.write(json.dumps({
+                    "dates": dates[-14:],
+                    "上证指数": sse_vol[-14:] if sse_vol else [],
+                    "创业板指": cyb_vol[-14:] if cyb_vol else [],
+                    "科创50": kc_vol[-14:] if kc_vol else [],
+                }, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"error": str(e)}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 因子趋势（近7日）
+        elif path == "/api/trends/factors":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                from backtest import get_all_kline_data, compute_factor_scores, BACKTEST_ETF_CODES
+                from config import TRACK_B_WEIGHTS
+                kline = get_all_kline_data(BACKTEST_ETF_CODES[:6], days=30)
+                factor_history = {"momentum": [], "mean_reversion": [], "volatility": [], "fund_flow": [], "microstructure": [], "regime": []}
+                dates = []
+                for code, klines in kline.items():
+                    if len(klines) < 10:
+                        continue
+                    scores = compute_factor_scores(klines, TRACK_B_WEIGHTS)
+                    sorted_idx = sorted(scores.keys())
+                    if not dates:
+                        dates = [klines[i]["date"][-5:] for i in sorted_idx[-7:]]
+                    for i in sorted_idx[-7:]:
+                        idx = sorted_idx[-7:].index(i)
+                        for fname in factor_history:
+                            val = scores[i]
+                            if len(factor_history[fname]) <= idx:
+                                factor_history[fname].append(val)
+                            else:
+                                factor_history[fname][idx] += val
+                    break  # 取第一只ETF
+                result = {"dates": dates}
+                for fname in factor_history:
+                    result[fname] = [round(v, 1) for v in factor_history[fname]] if factor_history[fname] else []
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"error": str(e)}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 回测设置（backtest.html用）
+        elif path == "/api/backtest/settings":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            from config import TRACK_B_WEIGHTS
+            self.wfile.write(json.dumps({
+                "backtest_settings": {"initial_capital": 100000, "top_n": 5, "hold_days": 5},
+                "weights_history": [{"weights": TRACK_B_WEIGHTS}],
+            }, ensure_ascii=False).encode("utf-8"))
+
+        # API: 监控池配置（扩展后）
+        elif path == "/api/etf/universe":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            from etf_data import ETF_UNIVERSE, ALL_ETFS
+            universe = {cat: [e["code"] for e in etfs] for cat, etfs in ETF_UNIVERSE.items()}
+            self.wfile.write(json.dumps({
+                "total": len(ALL_ETFS),
+                "categories": universe,
+                "data_source": "腾讯行情API",
+                "refresh_interval": 30,
+            }, ensure_ascii=False).encode("utf-8"))
+
+        # API: 数据库统计（v3.2新增）
+        elif path == "/api/db/stats":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(get_db_stats(), ensure_ascii=False).encode("utf-8"))
+
+        # ── 原有API保持不变 ──
+
         # 访问日志
         elif path == "/log":
             self.send_response(200)
@@ -763,15 +1020,24 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
 
-class ReusableTCPServer(socketserver.TCPServer):
+class ThreadingDashboardServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    """多线程看板服务器（每请求一线程，避免单线程阻塞）"""
     allow_reuse_address = True
+    daemon_threads = True  # 子线程随主进程退出
+    request_queue_size = 50  # 增大请求队列
 
 
 def start_server():
     """启动看板服务器"""
     os.chdir(DATA_DIR)
 
-    # 初始化数据文件
+    # 初始化SQLite数据库 & 迁移旧JSON数据
+    init_db()
+    migrated = migrate_from_json()
+    if migrated:
+        _server_logger.info("JSON → SQLite 数据迁移完成")
+    
+    # 初始化数据文件（仅data.json保留，其余已迁移到SQLite）
     if not DATA_FILE.exists():
         update_data_file(DEFAULT_DATA)
     if not AGENTS_STATUS_FILE.exists():
@@ -781,14 +1047,17 @@ def start_server():
     if not CONFLICTS_FILE.exists():
         save_conflicts([])
 
-    with ReusableTCPServer((BIND_ADDR, PORT), DashboardHandler) as httpd:
+    with ThreadingDashboardServer((BIND_ADDR, PORT), DashboardHandler) as httpd:
         local_ip = __get_local_ip()
         print(f"\n{'='*60}")
-        print(f"  九章量化局 · 实时看板服务器 v2.0")
+        print(f"  九章量化局 · 实时看板服务器 v3.0")
+        print(f"  数据源: 腾讯行情API（真实数据 + 真实因子计算）")
         print(f"{'='*60}")
         print(f"  本机访问  : http://localhost:{PORT}")
         print(f"  局域网访问: http://{local_ip}:{PORT}")
-        print(f"  协同中心  : http://localhost:{PORT}/lobster_collab.html")
+        print(f"  实时行情  : http://localhost:{PORT}/api/market/realtime")
+        print(f"  融合报告  : http://localhost:{PORT}/api/fusion/report")
+        print(f"  K线数据  : http://localhost:{PORT}/api/market/kline?code=sh510300")
         print(f"{'='*60}\n")
         print(f"  等待请求...（Ctrl+C 停止）\n")
 
