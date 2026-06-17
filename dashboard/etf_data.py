@@ -384,10 +384,21 @@ def calculate_rankings(data, sort_by='change_pct', top_n=50):
     
     return etf_list[:top_n]
 
+def _read_cached_data():
+    """从缓存文件直接读取ETF数据（不触发TDX）"""
+    if ETF_CACHE_FILE.exists():
+        try:
+            with open(ETF_CACHE_FILE, 'r', encoding='utf-8') as f:
+                cache = json.load(f)
+                return cache.get('data', {})
+        except:
+            pass
+    return generate_mock_etf_data()
+
 def get_watchlist_data():
-    """获取自选ETF数据"""
+    """获取自选ETF数据（从缓存读取，不触发TDX）"""
     watchlist = load_watchlist()
-    all_data = generate_etf_data()
+    all_data = _read_cached_data()
     
     result = {'a_share': [], 'us': []}
     
@@ -416,7 +427,7 @@ def get_watchlist_data():
 
 def get_etf_detail(code):
     """获取ETF详细信息"""
-    all_data = generate_etf_data()
+    all_data = _read_cached_data()
     return all_data.get(code, None)
 
 def get_sector_etfs():
@@ -432,7 +443,7 @@ def get_sector_etfs():
         '海外': ['513100', '513500', '513050', '513180']
     }
     
-    all_data = generate_etf_data()
+    all_data = _read_cached_data()
     result = {}
     
     for sector, codes in sectors.items():
@@ -446,7 +457,7 @@ def get_sector_etfs():
 
 def search_etfs(keyword, limit=20):
     """搜索ETF"""
-    all_data = generate_etf_data()
+    all_data = _read_cached_data()
     results = []
     
     keyword = keyword.lower()
