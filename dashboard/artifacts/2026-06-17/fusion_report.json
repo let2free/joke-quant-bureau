@@ -1,124 +1,42 @@
 {
-  "generated_at": "2026-06-17T08:45:00",
-  "fusion_type": "九章量化局完整流程 + 隔夜美股修正",
+  "generated_at": "2026-06-17T09:00:00",
+  "fusion_type": "九章量化局完整流程 Phase 0-5",
   "phases_completed": ["Phase 0", "Phase 1", "Phase 2", "Phase 3", "Phase 4", "Phase 5"],
+  "method": "jiuzhang_full",
   "market_state": "谨慎偏多",
-  "L0_liquidity": "中性偏宽松",
-  "L4b_impact": "无重大冲击",
-  "overnight_us": {
-    "dow": "+0.64%",
-    "sp500": "-0.57%",
-    "nasdaq": "-1.15%",
-    "summary": "科技回调，道指新高",
-    "impact_on_a": "科技板块承压，整体中性"
-  },
+  "L0_liquidity": "中性偏宽松(OMO净投放+北向流入)",
+  "L4b_impact": "通信战略利好+限售解禁压力",
   "rankings": [
-    {
-      "rank": 1,
-      "code": "512660",
-      "name": "军工ETF",
-      "original_prediction": 1.97,
-      "calibrated_prediction": 2.10,
-      "score_b": 78.8,
-      "score_fused": 82.5,
-      "confidence": "高",
-      "reason": "地缘催化+油价利好+资金流入",
-      "adjustment": "上修0.13%"
-    },
-    {
-      "rank": 2,
-      "code": "516160",
-      "name": "新能源ETF",
-      "original_prediction": 1.61,
-      "calibrated_prediction": 1.80,
-      "score_b": 74.2,
-      "score_fused": 80.2,
-      "confidence": "高",
-      "reason": "油价暴跌利好新能源替代",
-      "adjustment": "上修0.19%"
-    },
-    {
-      "rank": 3,
-      "code": "515880",
-      "name": "通信ETF",
-      "original_prediction": 1.77,
-      "calibrated_prediction": 1.80,
-      "score_b": 76.5,
-      "score_fused": 78.8,
-      "confidence": "中",
-      "reason": "5G建设独立逻辑",
-      "adjustment": "上修0.03%"
-    },
-    {
-      "rank": 4,
-      "code": "159995",
-      "name": "芯片ETF",
-      "original_prediction": 2.31,
-      "calibrated_prediction": 1.50,
-      "score_b": 82.5,
-      "score_fused": 76.5,
-      "confidence": "中",
-      "reason": "美股科技回调传导，下修",
-      "adjustment": "下修0.81%"
-    },
-    {
-      "rank": 5,
-      "code": "515070",
-      "name": "人工智能ETF",
-      "original_prediction": 2.17,
-      "calibrated_prediction": 1.30,
-      "score_b": 80.2,
-      "score_fused": 74.2,
-      "confidence": "中",
-      "reason": "算力板块获利回吐，下修",
-      "adjustment": "下修0.87%"
-    },
-    {
-      "rank": 6,
-      "code": "512880",
-      "name": "证券ETF",
-      "original_prediction": 1.41,
-      "calibrated_prediction": 1.20,
-      "score_b": 72.8,
-      "score_fused": 72.8,
-      "confidence": "中",
-      "reason": "市场情绪偏谨慎",
-      "adjustment": "下修0.21%"
-    }
+    {"rank": 1, "code": "512660", "name": "军工ETF", "calibrated_prediction": 2.25, "score_b": 74.6, "score_fused": 83.6, "confidence": "高", "reason": "地缘催化+资金流入+L0流动性加持"},
+    {"rank": 2, "code": "515880", "name": "通信ETF", "calibrated_prediction": 2.15, "score_b": 73.5, "score_fused": 83.1, "confidence": "高", "reason": "工信部AI+通信战略+L4b事件驱动"},
+    {"rank": 3, "code": "516160", "name": "新能源ETF", "calibrated_prediction": 1.95, "score_b": 68.1, "score_fused": 76.2, "confidence": "高", "reason": "油价暴跌5%利好替代"},
+    {"rank": 4, "code": "159995", "name": "芯片ETF", "calibrated_prediction": 1.65, "score_b": 71.8, "score_fused": 75.6, "confidence": "中", "reason": "美股传导但国内政策利好"},
+    {"rank": 5, "code": "515070", "name": "人工智能ETF", "calibrated_prediction": 1.50, "score_b": 69.0, "score_fused": 73.6, "confidence": "中", "reason": "获利回吐+AI战略对冲"},
+    {"rank": 6, "code": "512880", "name": "证券ETF", "calibrated_prediction": 1.35, "score_b": 63.5, "score_fused": 68.8, "confidence": "中", "reason": "美联储前观望情绪"}
   ],
   "sell_signals": [
-    {
-      "code": "516080",
-      "name": "创新药ETF",
-      "prediction": -1.50,
-      "reason": "均值回归失败+资金持续流出"
-    },
-    {
-      "code": "512010",
-      "name": "医药ETF",
-      "prediction": -1.00,
-      "reason": "行业利空+集采压力"
-    },
-    {
-      "code": "588000",
-      "name": "科创50ETF",
-      "prediction": +0.80,
-      "reason": "美股科技回调传导，涨幅受限"
-    }
+    {"code": "516080", "name": "创新药ETF", "prediction": -1.80, "reason": "均值回归失败+资金流出+集采"},
+    {"code": "512010", "name": "医药ETF", "prediction": -1.20, "reason": "行业利空+集采压力"},
+    {"code": "588000", "name": "科创50ETF", "prediction": 0.70, "reason": "美股科技回调传导"}
   ],
   "risk_warnings": [
-    "美联储议息会议（6/17-18）：关注点阵图和鲍威尔讲话",
-    "美股科技回调传导：纳指-1.15%，A股科技开盘压力",
-    "油价暴跌5%：利好制造业但关注OPEC+后续",
-    "成交量：关注今日能否维持万亿以上"
+    "美联储议息: 尾盘前仓位降至50%以下",
+    "美股科技回调: 纳指-1.15%",
+    "限售解禁高峰: 高位股松动",
+    "油价暴跌5%: 利好新能源"
   ],
-  "weights": {
-    "momentum": 0.35,
-    "fund_flow": 0.25,
-    "mean_reversion": 0.15,
-    "volatility": 0.08,
-    "microstructure": 0.07,
-    "regime": 0.10
+  "wind_control": {
+    "tail_risk": "美联储鹰派25%概率",
+    "position_advice": "尾盘降至50%",
+    "stop_loss": "-2%统一止损"
   },
-  "calibration_factor": 0.6
+  "weights": {"momentum": 0.35, "fund_flow": 0.25, "mean_reversion": 0.15, "volatility": 0.05, "microstructure": 0.10, "regime": 0.10},
+  "calibration_factor": 0.6,
+  "comparison": {
+    "simplified_vs_jiuzhang": {
+      "ranking_consistency": "基本一致(军工>通信>新能源)",
+      "avg_pred_diff": 0.19,
+      "jiuzhang_advantage": "L0+L4b调整+因子可追踪+风控纪律"
+    }
+  }
 }
