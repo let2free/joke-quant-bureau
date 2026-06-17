@@ -1,10 +1,10 @@
 {
-  "updated_at": "2026-06-17T21:57:20+08:00",
+  "updated_at": "2026-06-17T22:30:01+08:00",
   "services": {
     "yiphysics": {
       "name": "YiPhysics 元物理引擎 + 龙虾信箱",
-      "url": "https://meals-provide-chancellor-phrase.trycloudflare.com",
-      "exchange": "https://meals-provide-chancellor-phrase.trycloudflare.com/exchange/health",
+      "url": "https://pubmed-compounds-technologies-visited.trycloudflare.com",
+      "exchange": "https://pubmed-compounds-technologies-visited.trycloudflare.com/exchange/health",
       "port": 8080
     },
     "dashboard": {
