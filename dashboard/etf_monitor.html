@@ -19,6 +19,18 @@
     <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
   </div>
 </nav>
+
+<div class="container">
+
+  <!-- 市场概览（可折叠） -->
+  <div class="collapsible" id="section-metrics">
+    <div class="collapsible-header" onclick="toggleSection('metrics')">
+      <h3><span>📊</span> 市场概览</h3>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="zoom-controls">
+          <button class="zoom-btn" onclick="event.stopPropagation();zoomSection('metrics','out')">−</button>
+          <button class="zoom-btn" onclick="event.stopPropagation();zoomSection('metrics','in')">+</button>
+        </div>
         <span class="toggle" id="toggle-metrics">▼</span>
       </div>
     </div>
@@ -909,26 +921,6 @@ function searchETFs() {
   renderETFList();
 }
 
-function getSector(name) {
-  if (name.includes('半导体') || name.includes('芯片') || name.includes('AI') || name.includes('人工智能') || name.includes('科创')) return '科技';
-  if (name.includes('新能源') || name.includes('光伏') || name.includes('锂电') || name.includes('新能车')) return '新能源';
-  if (name.includes('医药') || name.includes('创新药') || name.includes('医疗') || name.includes('生科')) return '医药';
-  if (name.includes('消费') || name.includes('食品') || name.includes('家电') || name.includes('酒')) return '消费';
-  if (name.includes('银行') || name.includes('证券') || name.includes('金融') || name.includes('保险')) return '金融';
-  if (name.includes('军工') || name.includes('国防')) return '军工';
-  if (name.includes('地产') || name.includes('房地产') || name.includes('基建')) return '地产';
-  if (name.includes('纳指') || name.includes('标普') || name.includes('恒生') || name.includes('中概') || name.includes('日经') || name.includes('德国') || name.includes('法国')) return '海外';
-  return '其他';
-}
-          <span class="name" style="margin-left: 10px;">${etf.name}</span>
-        </div>
-        <button class="add-btn" onclick="addWatchlist('${etf.code}', '${etf.name}', '${etf.market}'); renderCurrentWatchlist();">添加</button>
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error('搜索失败:', err);
-  }
-}
 </script>
 <script src="static/common.js"></script>
 <script>

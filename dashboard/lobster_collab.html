@@ -20,6 +20,24 @@
     <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
   </div>
 </nav>
+
+        <!-- Module 1: Agent Status Panel -->
+        <div class="module">
+            <div class="module-title">
+                <span>🤖 Agent状态面板（实时）</span>
+                <span class="badge" id="agents-online">加载中...</span>
+            </div>
+            <div class="agents-grid" id="agents-grid">
+                <div class="loading">正在加载Agent状态...</div>
+            </div>
+        </div>
+
+        <!-- Module 2: Collaboration Log -->
+        <div class="module">
+            <div class="module-title">
+                <span>📝 协同日志（实时滚动）</span>
+                <button class="btn btn-primary" onclick="clearLog()">清空日志</button>
+            </div>
             <div class="log-container" id="log-container">
                 <div class="log-entry">
                     <span class="log-time">[2026-06-16 03:31:00]</span>
