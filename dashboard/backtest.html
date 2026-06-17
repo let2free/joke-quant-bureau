@@ -23,14 +23,14 @@
   <div class="container">
     <!-- 准确率趋势 -->
     <div class="grid grid-2">
-      <div class="panel">
+      <div class="panel card-keep">
         <div class="card-title">📈 准确率趋势</div>
         <div class="chart-container">
           <canvas id="accuracyChart"></canvas>
         </div>
       </div>
       
-      <div class="panel">
+      <div class="panel card-keep">
         <div class="card-title">💰 回测权益曲线</div>
         <div class="chart-container">
           <canvas id="equityChart"></canvas>
@@ -40,7 +40,7 @@
     
     <!-- 回测参数设置 -->
     <div class="grid grid-2">
-      <div class="panel">
+      <div class="panel card-keep">
         <div class="card-title">⚙️ 回测参数设置</div>
         
         <div class="form-group">
@@ -71,7 +71,7 @@
         <button class="btn btn-primary" onclick="runBacktest()">🚀 运行回测</button>
       </div>
       
-      <div class="panel">
+      <div class="panel card-keep">
         <div class="card-title">📊 回测结果</div>
         <div id="backtestResult">
           <div class="loading">等待回测...</div>
@@ -81,7 +81,7 @@
     
     <!-- 因子权重优化 -->
     <div class="grid grid-2">
-      <div class="panel">
+      <div class="panel card-keep">
         <div class="card-title">⚡ 因子权重优化器</div>
         
         <div class="form-group">
@@ -97,7 +97,7 @@
         </div>
       </div>
       
-      <div class="panel">
+      <div class="panel card-keep">
         <div class="card-title">📋 当前因子权重</div>
         <div id="currentWeights">
           <div class="loading">加载中...</div>

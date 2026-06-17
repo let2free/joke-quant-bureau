@@ -11,8 +11,7 @@
     <div class="container">
         <nav class="header">
   <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:1.4rem;">⬡</span>
-    <h1>九章量化局</h1>
+    <span style="font-size:1.4rem;">⬡</span><h1>九章量化局</h1>
     <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(168,85,247,0.15);padding:2px 8px;border-radius:4px;">龙虾协同</span>
   </div>
   <div style="display:flex;align-items:center;gap:20px;">
@@ -20,17 +19,6 @@
     <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
   </div>
 </nav>
-
-        <!-- Module 1: Agent Status Panel -->
-        <div class="module">
-            <div class="module-title">
-                <span>🤖 Agent状态面板（实时）</span>
-                <span class="badge" id="agents-online">加载中...</span>
-            </div>
-            <div class="agents-grid" id="agents-grid">
-                <div class="loading">正在加载Agent状态...</div>
-            </div>
-        </div>
 
         <!-- Module 2: Collaboration Log -->
         <div class="module">
@@ -515,8 +503,8 @@
     </script>
 <script src="static/common.js"></script>
 <script>
-document.getElementById('nav-bar').innerHTML = renderNav('lobster_collab');
-updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
+document.getElementById("nav-bar").innerHTML=renderNav("lobster_collab");
+updateClock("clock");setInterval(()=>updateClock("clock"),1000);
 </script>
 </body>
 </html>

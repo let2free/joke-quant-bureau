@@ -30,14 +30,6 @@
 
 <div class="container">
 
-  <!-- ── 流程执行状态 ── -->
-  <div class="panel fade-in">
-    <div class="panel-header">
-      <h2>🔄 九章量化局 · 流程执行状态</h2>
-    </div>
-    <div class="phase-flow" id="phase-flow"></div>
-  </div>
-  
   <!-- ── 核心指标 ── -->
   <div class="kpi-row" id="metrics-grid"></div>
   
@@ -77,14 +69,6 @@ updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
 
 // 模拟数据（实际使用时从API获取）
 const mockData = {
-  phases: [
-    { name: 'Phase 0', agent: '系统', status: 'completed', label: '因子预检' },
-    { name: 'Phase 1', agent: '大A+老美+军机处', status: 'completed', label: '并行侦察' },
-    { name: 'Phase 2', agent: '量化1哥+数据工程师', status: 'completed', label: '深度分析' },
-    { name: 'Phase 3', agent: '因子研究员', status: 'completed', label: '交叉验证' },
-    { name: 'Phase 4', agent: '包青天', status: 'completed', label: '风控审查' },
-    { name: 'Phase 5', agent: '指挥官', status: 'completed', label: '双轨融合' }
-  ],
   metrics: [
     { label: '预测日期', value: '2026-06-17', change: '周二' },
     { label: '方向准确率', value: '100%', change: '历史最佳', up: true },
@@ -134,7 +118,6 @@ const mockData = {
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
-  renderPhases();
   renderMetrics();
   renderAgents();
   renderPredictions();
@@ -149,21 +132,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateClock() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN');
-}
-
-function renderPhases() {
-  const container = document.getElementById('phase-flow');
-  container.innerHTML = mockData.phases.map((phase, i) => {
-    const statusClass = phase.status === 'completed' ? 'completed' : phase.status === 'active' ? 'active' : '';
-    return `
-      ${i > 0 ? '<span class="phase-arrow">→</span>' : ''}
-      <div class="phase-step ${statusClass}">
-        <div class="phase-name">${phase.name}</div>
-        <div class="phase-agent">${phase.agent}</div>
-        <div style="font-size:0.7rem;color:#6b7b99">${phase.label}</div>
-      </div>
-    `;
-  }).join('');
 }
 
 function renderMetrics() {
