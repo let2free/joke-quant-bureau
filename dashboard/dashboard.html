@@ -5,14 +5,127 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>九章量化局 · 实时看板 v2</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="static/theme.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #0a0e27;
+    color: #e0e6ff;
+    min-height: 100vh;
+  }
+  :root {
+    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
+    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
+    --bg-card: #121630; --border: #1e264a;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
+  .header .right { display: flex; gap: 16px; align-items: center; font-size: 0.8rem; color: #6b7b99; }
+  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
+  .nav-tab {
+    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    text-decoration: none; transition: all 0.3s;
+  }
+  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
+  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .dot.ok { background: var(--down); box-shadow: 0 0 6px var(--down); }
+  .dot.warn { background: #ffc400; box-shadow: 0 0 6px #ffc400; }
+  .dot.err { background: var(--up); box-shadow: 0 0 6px var(--up); }
+
+  .grid { display: grid; gap: 14px; padding: 14px; max-width: 1600px; margin: 0 auto;
+    grid-template-columns: repeat(4, 1fr); }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; transition: border-color 0.3s;
+  }
+  .card:hover { border-color: var(--blue); }
+  .c4 { grid-column: span 4; } .c3 { grid-column: span 3; }
+  .c2 { grid-column: span 2; } .c1 { grid-column: span 1; }
+  .card h2 {
+    font-size: 0.8rem; color: #6b7b99; margin-bottom: 10px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border); letter-spacing: 1px;
+  }
+  .idx-row { display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid #0a0e271a; font-size: 0.9rem; }
+  .idx-row:last-child { border-bottom: none; }
+  .name { flex: 1; color: #c0c8e0; }
+  .price { font-family: 'Courier New', monospace; color: #e0e6ff; margin: 0 10px; }
+  .chg { font-weight: bold; min-width: 64px; text-align: right; }
+  .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--flat); }
+  .rank { color: var(--blue); font-size: 0.75rem; width: 22px; }
+
+  .agent-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .agent-cell {
+    background: #0a0e27; border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px; text-align: center;
+  }
+  .agent-cell .role { font-size: 0.65rem; color: #6b7b99; }
+  .agent-cell .nm { font-size: 0.8rem; color: #c0c8e0; margin: 3px 0; }
+
+  .fomc-bar { display: flex; gap: 2px; height: 22px; margin: 8px 0; }
+  .fomc-seg {
+    flex: 1; border-radius: 4px; display: flex; align-items: center;
+    justify-content: center; font-size: 0.65rem; color: #0a0e27; font-weight: bold;
+  }
+
+  .factor-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    background: #1a1f4a; border: 1px solid #2a3f6a; border-radius: 6px;
+    padding: 5px 10px; font-size: 0.75rem;
+  }
+  .tag .lbl { color: #6b7b99; font-size: 0.65rem; }
+  .tag .val { color: #c0c8e0; font-weight: bold; }
+
+  .updated { text-align: right; font-size: 0.65rem; color: var(--blue); margin-top: 6px; }
+
+  .chart-wrap { position: relative; width: 100%; height: 220px; }
+  .chart-wrap canvas { width: 100% !important; height: 100% !important; }
+  .chart-wrap.tall { height: 280px; }
+
+  .advice { font-size: 0.82rem; line-height: 1.7; color: #c0c8e0; }
+  .advice .item { margin-bottom: 6px; padding-left: 12px; border-left: 3px solid var(--blue); }
+
+  table.flt { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  table.flt th { color: #6b7b99; padding: 5px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.flt td { padding: 5px; border-bottom: 1px solid #0a0e271a; }
+  table.flt tr:hover { background: #1a1f4a; }
+
+  .topology { position: relative; width: 100%; height: 160px; }
+
+  @media (max-width: 1200px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .c4, .c3 { grid-column: span 2; }
+    .agent-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    .c4, .c3, .c2 { grid-column: span 1; }
+    .agent-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
 </head>
 <body>
 
 <div class="header">
   <h1>⬡ 九章量化局 · 实时看板 v2</h1>
   <div style="display: flex; align-items: center; gap: 20px;">
-    <div class="nav-tabs" id="nav-bar"></div>
+    <div class="nav-tabs">
+      <a href="dashboard.html" class="nav-tab active">📊 实时看板</a>
+      <a href="jiuzhang.html" class="nav-tab">🧮 测算中心</a>
+      <a href="etf_monitor.html" class="nav-tab">📈 ETF监测</a>
+      <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
+      <a href="backtest.html" class="nav-tab">📉 回测验证</a>
+      <a href="history.html" class="nav-tab">📁 历史数据</a>
+      <a href="lobster_collab.html" class="nav-tab">🦞 龙虾协同</a>
+    </div>
     <div class="right">
       <span><span class="dot ok" id="dot-c"></span><span id="conn">已连接</span></span>
       <span id="clock">--:--:--</span>
@@ -782,7 +895,5 @@ function renderAccuracyTrend(accuracy) {
 }
 
 </script>
-<script src="static/common.js"></script>
-<script>document.getElementById("nav-bar").innerHTML=renderNav("dashboard");</script>
 </body>
 </html>

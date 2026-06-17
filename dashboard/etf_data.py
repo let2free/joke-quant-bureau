@@ -300,42 +300,40 @@ def get_etf_list_from_tdx(page=1, page_size=100):
     return etfs
 
 def generate_etf_data(use_cache=True):
-    """生成ETF数据（缓存优先，必要时模拟数据回退）"""
-    # 1. 先检查缓存（放宽到120秒，避免频繁尝试TDX）
+    """生成ETF数据（优先使用缓存，然后通达信，最后模拟）"""
+    # 检查缓存
     if use_cache and ETF_CACHE_FILE.exists():
         try:
             with open(ETF_CACHE_FILE, 'r', encoding='utf-8') as f:
                 cache = json.load(f)
                 cache_time = datetime.fromisoformat(cache.get('updated_at', '2000-01-01'))
-                if (datetime.now() - cache_time).seconds < 120:
-                    data = cache.get('data', {})
-                    if data:
-                        return data
+                if (datetime.now() - cache_time).seconds < 30:  # 30秒内使用缓存
+                    return cache.get('data', {})
         except:
             pass
     
-    # 2. 尝试从通达信获取（快速超时，不阻塞）
+    # 尝试从通达信获取
     try:
-        import signal
-        codes_with_market = [{'code': etf['code'], 'market': etf['market']} for etf in COMMON_ETFS[:10]]
-        tdx_data = get_etf_quote_batch(codes_with_market, batch_size=3)
+        print("正在从通达信获取ETF数据...")
+        codes_with_market = [{'code': etf['code'], 'market': etf['market']} for etf in COMMON_ETFS[:50]]
+        tdx_data = get_etf_quote_batch(codes_with_market, batch_size=5)
         
-        if len(tdx_data) >= 5:
-            # 合并缓存
-            full_data = generate_mock_etf_data()
-            full_data.update(tdx_data)
+        if len(tdx_data) > 10:  # 成功获取足够数据
             # 保存缓存
             with open(ETF_CACHE_FILE, 'w', encoding='utf-8') as f:
-                json.dump({'updated_at': datetime.now().isoformat(), 'data': full_data}, f, ensure_ascii=False, indent=2)
-            return full_data
+                json.dump({
+                    'updated_at': datetime.now().isoformat(),
+                    'data': tdx_data
+                }, f, ensure_ascii=False, indent=2)
+            
+            print(f"从通达信获取到 {len(tdx_data)} 只ETF数据")
+            return tdx_data
     except Exception as e:
-        print(f"TDX数据获取跳过: {e}")
+        print(f"通达信数据获取失败: {e}")
     
-    # 3. 使用模拟数据
-    data = generate_mock_etf_data()
-    with open(ETF_CACHE_FILE, 'w', encoding='utf-8') as f:
-        json.dump({'updated_at': datetime.now().isoformat(), 'data': data}, f, ensure_ascii=False, indent=2)
-    return data
+    # 使用模拟数据
+    print("使用模拟数据")
+    return generate_mock_etf_data()
 
 def generate_mock_etf_data():
     """生成模拟ETF数据"""
@@ -384,21 +382,10 @@ def calculate_rankings(data, sort_by='change_pct', top_n=50):
     
     return etf_list[:top_n]
 
-def _read_cached_data():
-    """从缓存文件直接读取ETF数据（不触发TDX）"""
-    if ETF_CACHE_FILE.exists():
-        try:
-            with open(ETF_CACHE_FILE, 'r', encoding='utf-8') as f:
-                cache = json.load(f)
-                return cache.get('data', {})
-        except:
-            pass
-    return generate_mock_etf_data()
-
 def get_watchlist_data():
-    """获取自选ETF数据（从缓存读取，不触发TDX）"""
+    """获取自选ETF数据"""
     watchlist = load_watchlist()
-    all_data = _read_cached_data()
+    all_data = generate_etf_data()
     
     result = {'a_share': [], 'us': []}
     
@@ -427,7 +414,7 @@ def get_watchlist_data():
 
 def get_etf_detail(code):
     """获取ETF详细信息"""
-    all_data = _read_cached_data()
+    all_data = generate_etf_data()
     return all_data.get(code, None)
 
 def get_sector_etfs():
@@ -443,7 +430,7 @@ def get_sector_etfs():
         '海外': ['513100', '513500', '513050', '513180']
     }
     
-    all_data = _read_cached_data()
+    all_data = generate_etf_data()
     result = {}
     
     for sector, codes in sectors.items():
@@ -457,7 +444,7 @@ def get_sector_etfs():
 
 def search_etfs(keyword, limit=20):
     """搜索ETF"""
-    all_data = _read_cached_data()
+    all_data = generate_etf_data()
     results = []
     
     keyword = keyword.lower()

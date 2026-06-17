@@ -5,13 +5,132 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>历史数据 - 九章量化局</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="static/theme.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #0a0e27;
+    color: #e0e6ff;
+    min-height: 100vh;
+  }
+  :root {
+    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
+    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
+    --bg-card: #121630; --border: #1e264a;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
+  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
+  .nav-tab {
+    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
+    text-decoration: none; transition: all 0.3s;
+  }
+  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
+  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
+
+  .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+  
+  .section-title {
+    font-size: 1.1rem; color: var(--cyan); margin: 20px 0 15px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .icon { font-size: 1.3rem; }
+  
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 16px;
+  }
+  .card h3 {
+    font-size: 0.85rem; color: #6b7b99; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  
+  /* 日期选择器 */
+  .date-selector {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 20px;
+  }
+  .date-selector select, .date-selector button {
+    padding: 8px 16px; background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 5px; color: #c0c8e0; font-size: 0.9rem;
+  }
+  .date-selector button {
+    background: var(--blue); border-color: var(--blue); cursor: pointer;
+  }
+  .date-selector button:hover { background: #3a5ce5; }
+  
+  /* 数据表格 */
+  .data-table {
+    width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  }
+  .data-table th {
+    background: #1a1f4a; color: #6b7b99; padding: 10px;
+    text-align: left; border-bottom: 2px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px; border-bottom: 1px solid var(--border);
+  }
+  .data-table tr:hover { background: #1a1f4a33; }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+  
+  /* 指标卡片 */
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;
+  }
+  .metric-card {
+    background: linear-gradient(135deg, #1a1f4a 0%, #121630 100%);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .metric-value { font-size: 1.8rem; font-weight: bold; color: var(--cyan); }
+  .metric-label { font-size: 0.75rem; color: #6b7b99; margin-top: 4px; }
+  
+  /* 导入面板 */
+  .import-panel {
+    background: #1a1f4a; border: 1px solid #2a3f6a;
+    border-radius: 10px; padding: 20px; margin-bottom: 20px;
+  }
+  .import-panel h3 { color: var(--cyan); margin-bottom: 15px; }
+  .import-form {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.8rem; color: #6b7b99; }
+  .form-group select, .form-group input {
+    padding: 8px 12px; background: #0a0e27; border: 1px solid #2a3f6a;
+    border-radius: 5px; color: #c0c8e0; font-size: 0.9rem;
+  }
+  .import-btn {
+    grid-column: span 3; padding: 10px; background: var(--blue);
+    border: none; border-radius: 5px; color: white; font-size: 0.9rem;
+    cursor: pointer; transition: background 0.3s;
+  }
+  .import-btn:hover { background: #3a5ce5; }
+  
+  .chart-container { position: relative; height: 300px; }
+</style>
 </head>
 <body>
 <div class="header">
   <h1>⬡ 九章量化局 · 历史数据</h1>
   <div style="display: flex; align-items: center; gap: 20px;">
-    <div class="nav-tabs" id="nav-bar"></div>
+    <div class="nav-tabs">
+      <a href="dashboard.html" class="nav-tab">📊 实时看板</a>
+      <a href="jiuzhang.html" class="nav-tab">🧮 测算中心</a>
+      <a href="etf_monitor.html" class="nav-tab">📈 ETF监测</a>
+      <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
+      <a href="backtest.html" class="nav-tab">📉 回测验证</a>
+      <a href="history.html" class="nav-tab active">📁 历史数据</a>
+      <a href="lobster_collab.html" class="nav-tab">🦞 龙虾协同</a>
+    </div>
     <div style="font-size: 0.8rem; color: #6b7b99;">
       <span id="clock">--:--:--</span>
     </div>
@@ -318,7 +437,5 @@ function exportData() {
   window.open(`/api/export?date=${date}&format=csv`);
 }
 </script>
-<script src="static/common.js"></script>
-<script>document.getElementById("nav-bar").innerHTML=renderNav("history");</script>
 </body>
 </html>
