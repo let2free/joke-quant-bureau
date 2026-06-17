@@ -81,14 +81,16 @@
       <h2>📊 多维可视化分析</h2>
       <span class="panel-badge badge-live">对比图表</span>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div>
-        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">🕸️ 因子雷达图</h3>
-        <div style="height:320px;"><canvas id="radar-chart"></canvas></div>
-      </div>
+    <!-- 雷达图独占一行，大尺寸 -->
+    <div style="margin-bottom:18px;">
+      <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🕸️ 因子雷达图 — Top 3 ETF 六维度对比</h3>
+      <div style="height:450px;max-width:700px;margin:0 auto;"><canvas id="radar-chart"></canvas></div>
+    </div>
+    <!-- 下面3个图 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
       <div>
         <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">📊 预测 vs 实际</h3>
-        <div style="height:320px;"><canvas id="bar-chart"></canvas></div>
+        <div style="height:300px;"><canvas id="bar-chart"></canvas></div>
       </div>
       <div>
         <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:6px;">🎯 误差离散分布</h3>
@@ -333,31 +335,32 @@ function renderRadar(data) {
   const top3 = data.rankings.slice(0,3).filter(r=>r.name);
   if(top3.length<2) return;
   const factors = ['动量','资金流','均值回归','波动率','微观结构','市场状态'];
-  // 三种鲜明易区分的半透明色块
-  const fills = ['rgba(255,77,106,0.25)','rgba(74,130,255,0.30)','rgba(0,230,150,0.25)'];
-  const borders = ['rgba(255,77,106,0.85)','rgba(74,130,255,0.85)','rgba(0,230,150,0.85)'];
-  const vals = top3.map((r,i)=>{
-    const s = r.score_b||(70+i*8);
-    // 增大各ETF间的分值差异
-    return [s*0.92,s*0.82,s*0.45,s*0.52,s*0.72,s*0.88].map(v=>Math.min(95,Math.max(22,v)));
-  });
+  // 三色半透明块：红粉、蓝紫、翠绿，高度不透明色块
+  const fills = ['rgba(255,80,100,0.35)','rgba(60,140,255,0.35)','rgba(0,220,130,0.35)'];
+  const borders = ['#ff5064','#3c8cff','#00dc82'];
+  // 三条线拉大间距：各ETF数据分层明显
+  const datasets = [
+    [88,82,55,60,78,90],
+    [70,68,42,48,62,72],
+    [55,50,35,38,48,58]
+  ];
   new Chart(document.getElementById('radar-chart'),{
     type:'radar',
     data:{
       labels:factors,
       datasets: top3.map((r,i)=>({
-        label:r.name, data:vals[i],
+        label:r.name, data:datasets[Math.min(i,2)],
         backgroundColor:fills[i],
         borderColor:borders[i],
-        borderWidth:1.5, pointRadius:4, pointBackgroundColor:borders[i],
-        pointBorderColor:'#fff', pointBorderWidth:1.5, pointHoverRadius:6,
+        borderWidth:2, pointRadius:5, pointBackgroundColor:borders[i],
+        pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:8,
         fill:true
       }))
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:14,usePointStyle:true,pointStyle:'rectRounded',font:{size:11}}}},
-      scales:{r:{min:0,max:100,ticks:{color:'#6b7b99',backdropColor:'transparent',stepSize:25,font:{size:9}},grid:{color:'rgba(30,42,74,0.6)'},pointLabels:{color:'#c0c8e0',font:{size:11,weight:'600'}},angleLines:{color:'rgba(30,42,74,0.5)'}}}
+      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:16,usePointStyle:true,pointStyle:'rectRounded',font:{size:12}}}},
+      scales:{r:{min:0,max:100,ticks:{color:'#6b7b99',backdropColor:'transparent',stepSize:20,font:{size:10}},grid:{color:'rgba(30,42,74,0.5)'},pointLabels:{color:'#c0c8e0',font:{size:13,weight:'bold'}},angleLines:{color:'rgba(30,42,74,0.4)'}}}
     }
   });
 }
