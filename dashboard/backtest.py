@@ -51,27 +51,27 @@ def compute_factor_scores(kline: list, weights: dict) -> Dict[int, float]:
     scores = {}
     n = len(closes)
     for i in range(60, n):
-        # Momentum: 20日收益率
-        mom = (closes[i] - closes[i - 20]) / closes[i - 20] * 100
+        # Momentum: 20日收益率（用前一日数据，避免前视偏差）
+        mom = (closes[i - 1] - closes[i - 21]) / closes[i - 21] * 100
 
-        # Mean reversion: 偏离20日均线
-        ma20 = sum(closes[i - 19:i + 1]) / 20
-        mr = (closes[i] - ma20) / ma20 * 100
+        # Mean reversion: 偏离20日均线（用前一日收盘价）
+        ma20 = sum(closes[i - 20:i]) / 20
+        mr = (closes[i - 1] - ma20) / ma20 * 100
 
-        # Volatility: 20日收益率标准差
-        rets = [(closes[j] - closes[j - 1]) / closes[j - 1] for j in range(i - 19, i + 1)]
+        # Volatility: 20日收益率标准差（用前一日数据）
+        rets = [(closes[j] - closes[j - 1]) / closes[j - 1] for j in range(i - 19, i)]
         vol = statistics.stdev(rets) * 100 if len(rets) > 1 else 0
 
-        # Fund flow: 成交量相对20日均量
-        avg_vol = sum(volumes[i - 19:i + 1]) / 20
-        flow = (volumes[i] - avg_vol) / avg_vol * 100 if avg_vol > 0 else 0
+        # Fund flow: 成交量相对20日均量（用前一日成交量）
+        avg_vol = sum(volumes[i - 20:i]) / 20
+        flow = (volumes[i - 1] - avg_vol) / avg_vol * 100 if avg_vol > 0 else 0
 
-        # Microstructure: 收盘在高低区间位置
-        hl = highs[i] - lows[i]
-        ms = ((closes[i] - lows[i]) / hl - 0.5) * 100 if hl > 0 else 0
+        # Microstructure: 前一日收盘在高低区间位置
+        hl = highs[i - 1] - lows[i - 1]
+        ms = ((closes[i - 1] - lows[i - 1]) / hl - 0.5) * 100 if hl > 0 else 0
 
-        # Regime: 近20日上涨天数占比
-        up_days = sum(1 for j in range(i - 19, i + 1) if closes[j] > closes[j - 1])
+        # Regime: 近20日上涨天数占比（用前一日）
+        up_days = sum(1 for j in range(i - 19, i) if closes[j] > closes[j - 1])
         regime = up_days / 20 * 100
 
         score = (

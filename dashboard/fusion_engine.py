@@ -33,17 +33,7 @@ TRACK_B_WEIGHTS = {
 }
 
 
-def calc_track_b_score(etf_data: dict) -> float:
-    """计算单只ETF的Track B数学打分"""
-    w = TRACK_B_WEIGHTS
-    score = 0.0
-    score += w["momentum"]       * (etf_data.get("factor_mom", 50) or 50)
-    score += w["mean_reversion"] * (etf_data.get("factor_mr", 50) or 50)
-    score += w["volatility"]     * (etf_data.get("factor_vol", 50) or 50)
-    score += w["fund_flow"]      * (etf_data.get("factor_flow", 50) or 50)
-    score += w["microstructure"] * (etf_data.get("factor_ms", 50) or 50)
-    score += w["regime"]         * (etf_data.get("factor_regime", 50) or 50)
-    return round(score, 1)
+from etf_data import calc_track_b_score
 
 
 def rank_by_track_b(etfs: dict) -> list:

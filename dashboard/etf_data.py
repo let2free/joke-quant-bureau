@@ -11,6 +11,7 @@
 import json
 import math
 import os
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -300,7 +301,8 @@ def calculate_all_factors(code: str, klines: list) -> dict:
 #  ETF数据获取 + 因子计算整合
 # ═══════════════════════════════════════════════════════════════
 
-# 全局缓存
+# 全局缓存（线程安全）
+_cache_lock = threading.Lock()
 _etf_data_cache = {"data": None, "fetched_at": 0}
 _factor_cache = {"data": None, "fetched_at": 0}
 
@@ -323,17 +325,20 @@ def generate_etf_data(use_cache=True) -> dict:
     
     now = time.time()
     
-    # 检查内存缓存（30秒内）
-    if use_cache and _etf_data_cache["data"] and (now - _etf_data_cache["fetched_at"]) < 30:
-        return _etf_data_cache["data"]
+    # 检查内存缓存（30秒内，线程安全读）
+    with _cache_lock:
+        cache_hit = (use_cache and _etf_data_cache["data"] and (now - _etf_data_cache["fetched_at"]) < 30)
+        if cache_hit:
+            return _etf_data_cache["data"]
     
     # 1. 获取实时行情（所有ETF）
     codes = [etf["code"] for etf in ALL_ETFS]
     quote_result = fetch_realtime_quotes(codes, use_cache=True)
     quotes = quote_result["data"]
     
-    # 2. 获取K线数据并计算因子（检查因子缓存）
-    factors_valid = (_factor_cache["data"] and (now - _factor_cache["fetched_at"]) < FACTOR_CACHE_TTL)
+    # 2. 获取K线数据并计算因子（检查因子缓存，线程安全）
+    with _cache_lock:
+        factors_valid = (_factor_cache["data"] and (now - _factor_cache["fetched_at"]) < FACTOR_CACHE_TTL)
     
     if not factors_valid:
         # 批量获取K线（较慢，需控制频率）
@@ -352,10 +357,11 @@ def generate_etf_data(use_cache=True) -> dict:
                     "factor_ms": 50.0, "factor_regime": 50.0,
                 }
         
-        _factor_cache["data"] = factor_data
-        _factor_cache["fetched_at"] = now
+        with _cache_lock:
+            _factor_cache = {"data": factor_data, "fetched_at": now}
     else:
-        factor_data = _factor_cache["data"]
+        with _cache_lock:
+            factor_data = _factor_cache["data"]
     
     # 3. 合并行情 + 因子
     result = {}

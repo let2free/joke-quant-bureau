@@ -469,29 +469,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             data = get_sector_etfs()
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
 
-        # API: 添加自选
-        elif path == "/api/etf/watchlist/add" and self.command == "POST":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            body_json = json.loads(body)
-            code = body_json.get('code', '')
-            market = body_json.get('market', 'a_share')
-            result = add_to_watchlist(code, market)
-            self.wfile.write(json.dumps({"success": True, "watchlist": result}, ensure_ascii=False).encode("utf-8"))
 
-        # API: 移除自选
-        elif path == "/api/etf/watchlist/remove" and self.command == "POST":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            body_json = json.loads(body)
-            code = body_json.get('code', '')
-            market = body_json.get('market', 'a_share')
-            result = remove_from_watchlist(code, market)
-            self.wfile.write(json.dumps({"success": True, "watchlist": result}, ensure_ascii=False).encode("utf-8"))
 
         # API: 刷新数据
         elif path == "/api/etf/refresh":
@@ -1015,6 +993,32 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False).encode("utf-8"))
+
+        # API: 添加自选
+        elif path == "/api/etf/watchlist/add":
+            try:
+                data = json.loads(body)
+                result = add_to_watchlist(data.get('code', ''), data.get('market', 'a_share'))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "watchlist": result}, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, str(e))
+
+        # API: 移除自选
+        elif path == "/api/etf/watchlist/remove":
+            try:
+                data = json.loads(body)
+                result = remove_from_watchlist(data.get('code', ''), data.get('market', 'a_share'))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "watchlist": result}, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, str(e))
 
         else:
             self.send_error(404, "Not Found")

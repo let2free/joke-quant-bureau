@@ -223,6 +223,9 @@ def save_conflicts(data):
                      item.get("created_at", _now()))
                 )
             conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 

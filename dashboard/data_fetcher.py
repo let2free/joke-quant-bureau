@@ -3,7 +3,7 @@
 基于腾讯行情API，零依赖（纯urllib），Cache-first + Stale Fallback
 
 数据源：
-  - 实时行情：http://qt.gtimg.cn/q=sh510300,sh588000,...
+  - 实时行情：https://qt.gtimg.cn/q=sh510300,sh588000,...
   - K线历史：https://web.ifzq.gtimg.cn/appstock/app/fqkline/get
 
 缓存策略：
@@ -36,7 +36,7 @@ HTTP_TIMEOUT = 10
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
 # ── 腾讯行情API端点 ──
-TENCENT_QUOTE_URL = "http://qt.gtimg.cn/q="
+TENCENT_QUOTE_URL = "https://qt.gtimg.cn/q="
 TENCENT_KLINE_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 
 

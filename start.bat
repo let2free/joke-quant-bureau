@@ -13,7 +13,7 @@ timeout /t 1 /nobreak >nul
 
 :: 启动服务器
 cd /d "%~dp0dashboard"
-start /b "" "C:\Users\let2free\.workbuddy\binaries\python\versions\3.13.12\python.exe" dashboard_server.py
+start /b "" python dashboard_server.py
 
 :: 等待服务器启动
 echo 等待服务器启动...

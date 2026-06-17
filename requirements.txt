@@ -1,27 +1,8 @@
-# 九章量化局 - Python依赖
-
-# Web框架
-Flask>=2.3.0
-Werkzeug>=2.3.0
-
-# 数据处理
-pandas>=2.0.0
-numpy>=1.24.0
-
-# HTTP请求
-requests>=2.31.0
-
-# 日志
-loguru>=0.7.0
-
-# 回测框架（计划中）
-# backtrader>=1.9.78.123
-
-# 机器学习（Phase 3）
-# xgboost>=2.0.0
-# tensorflow>=2.15.0
-
-# 开发工具
-pytest>=7.4.0
-black>=23.0.0
-flake8>=6.0.0
+# 九章量化局 - 纯标准库，无外部依赖
+# 运行时: dashboard_server.py (标准库HTTP + SQLite)
+# app.py 已移除 (v3.2.1)
+#
+# 以下仅用于本地开发测试:
+# pytest>=7.4.0
+# black>=23.0.0
+# flake8>=6.0.0
