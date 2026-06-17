@@ -34,6 +34,31 @@ DATA_DIR = Path(__file__).parent
 DATA_FILE = DATA_DIR / "data.json"
 LOG_FILE = DATA_DIR / "access.log"
 
+# ── ETF数据缓存（后台线程预加载，避免HTTP handler阻塞）──
+_cached_etf_data = None
+_cached_etf_time = None
+
+def _background_load_etf():
+    """后台线程：加载ETF数据到缓存"""
+    global _cached_etf_data, _cached_etf_time
+    try:
+        _cached_etf_data = generate_etf_data(use_cache=True)
+        _cached_etf_time = datetime.now()
+        print(f"ETF数据预加载完成: {len(_cached_etf_data)} 只")
+    except Exception as e:
+        print(f"ETF数据预加载失败: {e}")
+
+def get_cached_etf():
+    """获取缓存的ETF数据（非阻塞）"""
+    global _cached_etf_data, _cached_etf_time
+    if _cached_etf_data is None:
+        _cached_etf_data = generate_etf_data(use_cache=True)
+        _cached_etf_time = datetime.now()
+    return _cached_etf_data
+
+# 启动时后台预加载
+threading.Thread(target=_background_load_etf, daemon=True).start()
+
 # 新数据文件
 AGENTS_STATUS_FILE = DATA_DIR / "agents_status.json"
 COLLAB_LOG_FILE = DATA_DIR / "collab_log.jsonl"
@@ -436,7 +461,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             market = params.get('market', 'all')
             sort_by = params.get('sort', 'change_pct')
             top_n = int(params.get('top', '50'))
-            data = generate_etf_data()
+            data = get_cached_etf()
             rankings = calculate_rankings(data, sort_by, top_n)
             self.wfile.write(json.dumps(rankings, ensure_ascii=False).encode("utf-8"))
 
@@ -499,7 +524,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             # 重新生成数据
-            data = generate_etf_data()
+            data = get_cached_etf()
             rankings = calculate_rankings(data, 'change_pct', 100)
             self.wfile.write(json.dumps({
                 "success": True,
