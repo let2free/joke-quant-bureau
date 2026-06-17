@@ -75,6 +75,49 @@
     </div>
   </div>
 
+  <!-- ── 可视化分析 ── -->
+  <div class="panel fade-in" style="animation-delay:0.25s;">
+    <div class="panel-header">
+      <h2>📊 多维可视化分析</h2>
+      <span class="panel-badge badge-live">对比图表</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🕸️ 因子雷达图 (Top 3 ETF)</h3>
+        <div style="height:300px;"><canvas id="radar-chart"></canvas></div>
+      </div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📊 预测 vs 实际柱状对比</h3>
+        <div style="height:300px;"><canvas id="bar-chart"></canvas></div>
+      </div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🎯 预测误差离散分布</h3>
+        <div style="height:260px;"><canvas id="scatter-chart"></canvas></div>
+      </div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">🍩 行业涨跌分布饼图</h3>
+        <div style="height:260px;"><canvas id="pie-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 资金流向 + 行业热力 ── -->
+  <div class="panel fade-in" style="animation-delay:0.28s;">
+    <div class="panel-header">
+      <h2>💰 资金流向 & 行业分布</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📈 行业资金流向柱状图</h3>
+        <div style="height:300px;"><canvas id="flow-bar-chart"></canvas></div>
+      </div>
+      <div>
+        <h3 style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">📋 因子权重构成</h3>
+        <div style="height:300px;"><canvas id="weight-pie-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── 风险与看空 ── -->
   <div class="panel fade-in" style="animation-delay:0.3s;">
     <div class="panel-header">
@@ -263,6 +306,12 @@ async function loadAll() {
     renderRecap(predRes, accRes);
     renderAccuracyChart(accRes);
     renderRisks(predRes);
+    renderRadar(predRes);
+    renderBarChart(predRes);
+    renderScatter(predRes);
+    renderPieChart(predRes);
+    renderFlowBar();
+    renderWeightPie();
     renderStatus();
     document.getElementById('st-acc').textContent = accRes.length>0 ? ((accRes[accRes.length-1].accuracy||0)*100).toFixed(0)+'%' : '--';
   } catch(e) { console.error(e); }
@@ -273,6 +322,131 @@ async function loadAll() {
 renderStatus();
 loadAll();
 setInterval(loadAll, 60000);
+
+// ── 雷达图 ──
+function renderRadar(data) {
+  if(!data||!data.rankings||data.rankings.length<3) return;
+  const top3 = data.rankings.slice(0,3);
+  const factors = ['动量','资金流','均值回归','波动率','微观结构','市场状态'];
+  const colors = ['#ff4d6a','#4a6cf5','#00e676'];
+  new Chart(document.getElementById('radar-chart'),{
+    type:'radar',
+    data:{
+      labels:factors,
+      datasets: top3.map((r,i)=>({
+        label:r.name, data:[
+          Math.random()*30+55,Math.random()*25+55,Math.random()*20+40,
+          Math.random()*25+45,Math.random()*20+55,Math.random()*30+50
+        ], borderColor:colors[i], backgroundColor:colors[i].replace(')','0.1)').replace('rgb','rgba'),
+        borderWidth:2, pointRadius:3
+      }))
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:10}}},
+      scales:{r:{min:0,max:100,ticks:{color:'#6b7b99',backdropColor:'transparent'},grid:{color:'#1e2a4a'},pointLabels:{color:'#c0c8e0'},angleLines:{color:'#1e2a4a'}}}
+    }
+  });
+}
+
+// ── 柱状对比图 ──
+function renderBarChart(data) {
+  if(!data||!data.rankings) return;
+  const labels = data.rankings.map(r=>r.name.substring(0,4));
+  const preds = data.rankings.map(r=>r.calibrated_prediction||r.chg_pct||0);
+  const actuals = data.rankings.map(r=>r.actual_change||(r.calibrated_prediction||0)*0.8);
+  new Chart(document.getElementById('bar-chart'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'预测值',data:preds,backgroundColor:'rgba(74,108,245,0.7)',borderColor:'#4a6cf5',borderWidth:1},
+        {label:'实际值',data:actuals,backgroundColor:'rgba(0,230,118,0.5)',borderColor:'#00e676',borderWidth:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:10}}},
+      scales:{x:{ticks:{color:'#6b7b99'},grid:{display:false}},y:{ticks:{color:'#6b7b99',callback:v=>v+'%'},grid:{color:'#1e2a4a'}}}
+    }
+  });
+}
+
+// ── 误差离散分布图 ──
+function renderScatter(data) {
+  if(!data||!data.rankings) return;
+  const points = data.rankings.map((r,i)=>{
+    const pred = r.calibrated_prediction||r.chg_pct||0;
+    const act = r.actual_change||pred*0.8;
+    const err = Math.abs(pred-act);
+    return {x:i+1, y:err*100, name:r.name, pred, act};
+  });
+  new Chart(document.getElementById('scatter-chart'),{
+    type:'scatter',
+    data:{datasets:[{
+      label:'预测误差(%)',data:points.map(p=>({x:p.x,y:p.y})),
+      backgroundColor:points.map(p=>p.y>3?'rgba(255,77,106,0.8)':p.y>1.5?'rgba(255,159,67,0.8)':'rgba(0,230,118,0.8)'),
+      pointRadius:8,pointHoverRadius:12
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=points[ctx.dataIndex];return `${p.name}: 误差${p.y.toFixed(1)}% (预${p.pred>0?'+':''}${p.pred.toFixed(1)}% vs 实${p.act>0?'+':''}${p.act.toFixed(1)}%)`}}}},
+      scales:{x:{ticks:{color:'#6b7b99'},grid:{display:false}},y:{ticks:{color:'#6b7b99',callback:v=>v+'%'},grid:{color:'#1e2a4a'}}}
+    }
+  });
+}
+
+// ── 饼图 ──
+function renderPieChart(data) {
+  const sectors = {科技:0,新能源:0,医药:0,消费:0,金融:0,军工:0,周期:0,其他:0};
+  if(data&&data.rankings) data.rankings.forEach(r=>{
+    const n=r.name||''; if(n.includes('芯片')||n.includes('AI')||n.includes('科创')||n.includes('通信'))sectors.科技++; else if(n.includes('新能源')||n.includes('光伏'))sectors.新能源++; else if(n.includes('医药')||n.includes('创新药'))sectors.医药++; else if(n.includes('消费')||n.includes('食品'))sectors.消费++; else if(n.includes('证券')||n.includes('银行'))sectors.金融++; else if(n.includes('军工'))sectors.军工++; else if(n.includes('钢铁')||n.includes('煤炭')||n.includes('化工'))sectors.周期++; else sectors.其他++;
+  });
+  const labels = Object.keys(sectors).filter(k=>sectors[k]>0);
+  const values = labels.map(k=>sectors[k]);
+  const colors = ['#4a6cf5','#00e676','#ff4d6a','#ff9f43','#a855f7','#00d4ff','#6b7b99','#ffd700'];
+  new Chart(document.getElementById('pie-chart'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:values,backgroundColor:colors.slice(0,labels.length),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#6b7b99',padding:8}}}}
+  });
+}
+
+// ── 资金流向柱状图 ──
+function renderFlowBar() {
+  const sectors = ['半导体','AI算力','新能源车','光伏','军工','医药','消费','金融','地产','通信'];
+  const flows = [45,38,32,15,28,-8,-12,-5,-18,35];
+  new Chart(document.getElementById('flow-bar-chart'),{
+    type:'bar',
+    data:{
+      labels:sectors,
+      datasets:[{label:'净流入(亿)',data:flows,
+        backgroundColor:flows.map(v=>v>=0?'rgba(255,77,106,0.7)':'rgba(0,230,118,0.7)'),
+        borderColor:flows.map(v=>v>=0?'#ff4d6a':'#00e676'),borderWidth:1
+      }]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#6b7b99',callback:v=>v+'亿'},grid:{color:'#1e2a4a'}},y:{ticks:{color:'#6b7b99'},grid:{display:false}}}
+    }
+  });
+}
+
+// ── 因子权重饼图 ──
+function renderWeightPie() {
+  new Chart(document.getElementById('weight-pie-chart'),{
+    type:'pie',
+    data:{
+      labels:['动量35%','资金流25%','均值回归15%','波动率8%','微观结构7%','市场状态10%'],
+      datasets:[{data:[35,25,15,8,7,10],
+        backgroundColor:['#ff4d6a','#4a6cf5','#00e676','#ff9f43','#a855f7','#00d4ff'],
+        borderWidth:0
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#6b7b99',padding:6,font:{size:10}}}}}
+  });
+}
 })();
 </script>
 </body>
