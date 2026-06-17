@@ -2,898 +2,278 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>九章量化局 · 实时看板 v2</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>九章量化局 · 实时看板 v2.0</title>
+<link rel="stylesheet" href="static/theme.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-    background: #0a0e27;
-    color: #e0e6ff;
-    min-height: 100vh;
-  }
-  :root {
-    --up: #ff4d6a; --down: #00e676; --flat: #6b7b99;
-    --blue: #4a6cf5; --cyan: #00d4ff; --purple: #a855f7;
-    --bg-card: #121630; --border: #1e264a;
-  }
-  .header {
-    background: linear-gradient(135deg, #1a1f4a 0%, #2a1f5a 100%);
-    border-bottom: 2px solid var(--blue);
-    padding: 10px 20px;
-    display: flex; justify-content: space-between; align-items: center;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .header h1 { font-size: 1.2rem; color: #7b9cff; letter-spacing: 2px; }
-  .header .right { display: flex; gap: 16px; align-items: center; font-size: 0.8rem; color: #6b7b99; }
-  .nav-tabs { display: flex; gap: 10px; margin-left: 20px; }
-  .nav-tab {
-    padding: 6px 14px; background: #1a1f4a; border: 1px solid #2a3f6a;
-    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: #6b7b99;
-    text-decoration: none; transition: all 0.3s;
-  }
-  .nav-tab:hover { background: #2a3f6a; color: #7b9cff; }
-  .nav-tab.active { background: #2a3f6a; color: #7b9cff; border-color: #4a6cf5; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
-  .dot.ok { background: var(--down); box-shadow: 0 0 6px var(--down); }
-  .dot.warn { background: #ffc400; box-shadow: 0 0 6px #ffc400; }
-  .dot.err { background: var(--up); box-shadow: 0 0 6px var(--up); }
-
-  .grid { display: grid; gap: 14px; padding: 14px; max-width: 1600px; margin: 0 auto;
-    grid-template-columns: repeat(4, 1fr); }
-  .card {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 14px; transition: border-color 0.3s;
-  }
-  .card:hover { border-color: var(--blue); }
-  .c4 { grid-column: span 4; } .c3 { grid-column: span 3; }
-  .c2 { grid-column: span 2; } .c1 { grid-column: span 1; }
-  .card h2 {
-    font-size: 0.8rem; color: #6b7b99; margin-bottom: 10px;
-    padding-bottom: 6px; border-bottom: 1px solid var(--border); letter-spacing: 1px;
-  }
-  .idx-row { display: flex; justify-content: space-between; align-items: center;
-    padding: 7px 0; border-bottom: 1px solid #0a0e271a; font-size: 0.9rem; }
-  .idx-row:last-child { border-bottom: none; }
-  .name { flex: 1; color: #c0c8e0; }
-  .price { font-family: 'Courier New', monospace; color: #e0e6ff; margin: 0 10px; }
-  .chg { font-weight: bold; min-width: 64px; text-align: right; }
-  .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--flat); }
-  .rank { color: var(--blue); font-size: 0.75rem; width: 22px; }
-
-  .agent-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-  .agent-cell {
-    background: #0a0e27; border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px; text-align: center;
-  }
-  .agent-cell .role { font-size: 0.65rem; color: #6b7b99; }
-  .agent-cell .nm { font-size: 0.8rem; color: #c0c8e0; margin: 3px 0; }
-
-  .fomc-bar { display: flex; gap: 2px; height: 22px; margin: 8px 0; }
-  .fomc-seg {
-    flex: 1; border-radius: 4px; display: flex; align-items: center;
-    justify-content: center; font-size: 0.65rem; color: #0a0e27; font-weight: bold;
-  }
-
-  .factor-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag {
-    background: #1a1f4a; border: 1px solid #2a3f6a; border-radius: 6px;
-    padding: 5px 10px; font-size: 0.75rem;
-  }
-  .tag .lbl { color: #6b7b99; font-size: 0.65rem; }
-  .tag .val { color: #c0c8e0; font-weight: bold; }
-
-  .updated { text-align: right; font-size: 0.65rem; color: var(--blue); margin-top: 6px; }
-
-  .chart-wrap { position: relative; width: 100%; height: 220px; }
-  .chart-wrap canvas { width: 100% !important; height: 100% !important; }
-  .chart-wrap.tall { height: 280px; }
-
-  .advice { font-size: 0.82rem; line-height: 1.7; color: #c0c8e0; }
-  .advice .item { margin-bottom: 6px; padding-left: 12px; border-left: 3px solid var(--blue); }
-
-  table.flt { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-  table.flt th { color: #6b7b99; padding: 5px; text-align: left; border-bottom: 1px solid var(--border); }
-  table.flt td { padding: 5px; border-bottom: 1px solid #0a0e271a; }
-  table.flt tr:hover { background: #1a1f4a; }
-
-  .topology { position: relative; width: 100%; height: 160px; }
-
-  @media (max-width: 1200px) {
-    .grid { grid-template-columns: repeat(2, 1fr); }
-    .c4, .c3 { grid-column: span 2; }
-    .agent-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-  @media (max-width: 700px) {
-    .grid { grid-template-columns: 1fr; }
-    .c4, .c3, .c2 { grid-column: span 1; }
-    .agent-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-</style>
 </head>
 <body>
 
-<div class="header">
-  <h1>⬡ 九章量化局 · 实时看板 v2</h1>
-  <div style="display: flex; align-items: center; gap: 20px;">
-    <div class="nav-tabs">
-      <a href="dashboard.html" class="nav-tab active">📊 实时看板</a>
-      <a href="jiuzhang.html" class="nav-tab">🧮 测算中心</a>
-      <a href="etf_monitor.html" class="nav-tab">📈 ETF监测</a>
-      <a href="topology.html" class="nav-tab">🔗 拓扑分析</a>
-      <a href="backtest.html" class="nav-tab">📉 回测验证</a>
-      <a href="history.html" class="nav-tab">📁 历史数据</a>
-      <a href="lobster_collab.html" class="nav-tab">🦞 龙虾协同</a>
-    </div>
-    <div class="right">
-      <span><span class="dot ok" id="dot-c"></span><span id="conn">已连接</span></span>
-      <span id="clock">--:--:--</span>
-    </div>
+<nav class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:1.4rem;">⬡</span>
+    <h1>九章量化局</h1>
+    <span style="font-size:0.7rem;color:var(--text-dim);background:rgba(74,108,245,0.15);padding:2px 8px;border-radius:4px;">v2.0</span>
   </div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="nav-tabs" id="nav-bar"></div>
+    <span style="font-size:0.85rem;font-weight:700;color:var(--cyan);" id="clock">--:--:--</span>
+  </div>
+</nav>
+
+<div class="status-bar" id="status-bar">
+  <!-- JS填充 -->
 </div>
 
-<div class="grid">
+<div class="container">
 
-  <!-- ========== Row 1: 大盘 + ETF排名 + 因子 ========== -->
-
-  <div class="card c1">
-    <h2>📊 大盘指数</h2>
-    <div id="indices">加载中...</div>
+  <!-- ── KPI关键指标 ── -->
+  <div class="kpi-row" id="kpi-row">
+    <!-- JS填充 -->
   </div>
 
-  <div class="card c1">
-    <h2>🎯 ETF实时排名</h2>
-    <div id="etf-rank">加载中...</div>
-  </div>
-
-  <div class="card c2">
-    <h2>🔬 因子监测状态</h2>
-    <div class="factor-tags" id="factors">加载中...</div>
-    <div class="updated" id="fac-upd"></div>
-  </div>
-
-  <!-- ========== Row 2: 涨跌柱状图 + 雷达图 + FOMC ========== -->
-
-  <div class="card c2">
-    <h2>📈 ETF今日涨跌幅对比</h2>
-    <div class="chart-wrap"><canvas id="chart-bar"></canvas></div>
-  </div>
-
-  <div class="card c1">
-    <h2>🕸️ 多因子雷达图</h2>
-    <div class="chart-wrap"><canvas id="chart-radar"></canvas></div>
-  </div>
-
-  <div class="card c1">
-    <h2>🔮 FOMC概率分布</h2>
-    <div class="chart-wrap"><canvas id="chart-fomc"></canvas></div>
-    <div style="font-size:0.7rem; color:#6b7b99; margin-top:4px;">
-      沃什首秀 · 6/17-18 · 点阵图定方向
+  <!-- ── 今日复盘 ── -->
+  <div class="panel fade-in">
+    <div class="panel-header">
+      <h2>📝 今日复盘总结</h2>
+      <span class="panel-badge badge-live" id="recap-date-badge">--</span>
     </div>
-  </div>
-
-  <!-- ========== Row 3: 因子IC柱状图 + 波动率曲线 + Agent拓扑 ========== -->
-
-  <div class="card c2">
-    <h2>📊 各因子IC贡献度</h2>
-    <div class="chart-wrap"><canvas id="chart-ic"></canvas></div>
-  </div>
-
-  <div class="card c2">
-    <h2>📉 指数波动率趋势</h2>
-    <div class="chart-wrap tall"><canvas id="chart-vol"></canvas></div>
-  </div>
-
-  <!-- ========== Row 4: Agent拓扑 + 资金流饼图 ========== -->
-
-  <div class="card c2">
-    <h2>🤖 Agent协同拓扑</h2>
-    <svg id="topo-svg" class="topology" viewBox="0 0 600 160"></svg>
-  </div>
-
-  <div class="card c1">
-    <h2>💰 资金流向分布</h2>
-    <div class="chart-wrap"><canvas id="chart-flow"></canvas></div>
-  </div>
-
-  <div class="card c1">
-    <h2>⚡ 实时操作建议</h2>
-    <div class="advice" id="advice">等待数据...</div>
-  </div>
-
-  <!-- ========== Row 5: 复盘总结 ========== -->
-
-  <div class="card c4">
-    <h2>📝 今日复盘总结（<span id="recap-date">-</span>）</h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 15px;">
-      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
-        <div style="font-size:1.6rem; font-weight:bold; color:var(--cyan);" id="recap-direction-acc">-</div>
-        <div style="font-size:0.75rem; color:#6b7b99;">方向准确率</div>
-      </div>
-      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
-        <div style="font-size:1.6rem; font-weight:bold; color:var(--orange);" id="recap-avg-error">-</div>
-        <div style="font-size:0.75rem; color:#6b7b99;">平均误差</div>
-      </div>
-      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
-        <div style="font-size:1.6rem; font-weight:bold; color:var(--down);" id="recap-best">-</div>
-        <div style="font-size:0.75rem; color:#6b7b99;">最准预测</div>
-      </div>
-      <div style="text-align:center; padding:12px; background:#0a0e27; border-radius:8px;">
-        <div style="font-size:1.6rem; font-weight:bold; color:var(--up);" id="recap-worst">-</div>
-        <div style="font-size:0.75rem; color:#6b7b99;">最偏预测</div>
-      </div>
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
       <div>
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 8px;">✅ 预测 vs 实际对比</h3>
-        <table class="flt" id="recap-comparison">
-          <tr><th>ETF</th><th>预测</th><th>实际</th><th>误差</th><th>方向</th></tr>
-        </table>
+        <div class="chart-box"><canvas id="accuracy-chart"></canvas></div>
       </div>
-      <div>
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 8px;">📊 历史准确率趋势</h3>
-        <div class="chart-wrap" style="height: 220px;"><canvas id="chart-accuracy-trend"></canvas></div>
-      </div>
-    </div>
-    <div style="display: flex; gap: 10px; margin-top: 10px;">
-      <a href="jiuzhang.html" style="color: var(--cyan); font-size: 0.8rem; text-decoration: none;">🧮 查看完整测算中心 →</a>
-    </div>
-  </div>
-
-  <!-- ========== Row 6: 预测跟踪 ========== -->
-
-  <div class="card c4">
-    <h2>🎯 次日预测（<span id="pred-date">-</span>）</h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-      <!-- 最新预测 -->
-      <div>
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">📋 推荐买入</h3>
-        <table class="flt" id="latest-prediction">
-          <tr><th>#</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>
-        </table>
-      </div>
-      <!-- 卖出信号 -->
-      <div>
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">⚠️ 卖出信号</h3>
-        <table class="flt" id="sell-signals">
-          <tr><th>ETF</th><th>预测涨跌</th><th>风险提示</th></tr>
-        </table>
-        <div style="margin-top: 15px;">
-          <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 8px;">⚠️ 风险提示</h3>
-          <div id="risk-warnings" style="font-size: 0.85rem;"></div>
-        </div>
+      <div id="recap-comparison">
+        <!-- JS填充 -->
       </div>
     </div>
   </div>
 
-  <!-- ========== Row 7: 自选ETF榜单 ========== -->
-
-  <div class="card c4">
-    <h2>⭐ 自选ETF榜单</h2>
-    <div style="display: flex; gap: 20px;">
-      <div style="flex: 1;">
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">A股自选</h3>
-        <table class="flt" id="watchlist-a-share"></table>
-      </div>
-      <div style="flex: 1;">
-        <h3 style="color: #6b7b99; font-size: 0.8rem; margin-bottom: 10px;">美股/海外自选</h3>
-        <table class="flt" id="watchlist-us"></table>
-      </div>
+  <!-- ── 次日预测 ── -->
+  <div class="panel fade-in" style="animation-delay:0.1s;">
+    <div class="panel-header">
+      <h2>🎯 今日预测排名</h2>
+      <span class="panel-badge badge-warn" id="pred-date-badge">--</span>
     </div>
-    <div style="margin-top: 10px; text-align: right;">
-      <a href="etf_monitor.html" style="color: var(--cyan); font-size: 0.8rem; text-decoration: none;">📊 查看完整ETF监测中心 →</a>
+    <div class="predict-rank" id="predict-cards">
+      <!-- JS填充 -->
     </div>
   </div>
 
-  <!-- ========== Row 6: ETF动态排名 ========== -->
-
-  <div class="card c4">
-    <h2>🏆 ETF动态排名（涨幅TOP10）</h2>
-    <table class="flt" id="etf-rankings"></table>
-    <div style="margin-top: 10px; text-align: right;">
-      <a href="etf_monitor.html" style="color: var(--cyan); font-size: 0.8rem; text-decoration: none;">📊 查看完整排名 →</a>
+  <!-- ── ETF实时排名 ── -->
+  <div class="panel fade-in" style="animation-delay:0.2s;">
+    <div class="panel-header">
+      <h2>📈 ETF实时排名</h2>
+      <span class="panel-badge badge-live">TOP 10</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table" id="etf-table">
+        <tr><th>#</th><th>代码</th><th>名称</th><th>最新价</th><th>涨跌幅</th><th>成交额</th><th>换手率</th></tr>
+      </table>
+    </div>
+    <div style="text-align:right;margin-top:10px;">
+      <a href="etf_monitor.html" style="color:var(--cyan);font-size:0.8rem;text-decoration:none;">📊 ETF监测中心 →</a>
     </div>
   </div>
 
-  <!-- ========== Row 7: 全量数据表 + 因子趋势 ========== -->
-
-  <div class="card c4">
-    <h2>📋 ETF全量数据表 · 双轨对比</h2>
-    <table class="flt" id="etf-table"></table>
-    <div class="updated" id="tbl-upd"></div>
-  </div>
-
-  <div class="card c4">
-    <h2>📈 因子趋势（近7日）</h2>
-    <div class="chart-wrap tall"><canvas id="chart-trend"></canvas></div>
+  <!-- ── 风险与看空 ── -->
+  <div class="panel fade-in" style="animation-delay:0.3s;">
+    <div class="panel-header">
+      <h2>⚠️ 风险提示 & 看空信号</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div id="risk-list"></div>
+      <div id="sell-list"></div>
+    </div>
   </div>
 
 </div>
 
+<script src="static/common.js"></script>
 <script>
-// ── Chart instances ──
-let charts = {};
+(function(){
+// ── 导航 ──
+document.getElementById('nav-bar').innerHTML = renderNav('dashboard');
+updateClock('clock'); setInterval(()=>updateClock('clock'),1000);
 
-function initCharts() {
-  const gridColor = '#1e264a';
-  const labelColor = '#6b7b99';
-  const defaultOpts = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: labelColor, font: { size: 10 } } } },
-  };
-
-  // 1. Bar chart: ETF涨跌幅
-  charts.bar = new Chart(document.getElementById('chart-bar'), {
-    type: 'bar',
-    data: {
-      labels: [],
-      datasets: [{
-        label: '今日涨跌%',
-        data: [],
-        backgroundColor: [],
-        borderRadius: 4,
-        barPercentage: 0.6,
-      }]
-    },
-    options: {
-      ...defaultOpts,
-      scales: {
-        x: { ticks: { color: labelColor, font: { size: 10 } }, grid: { color: gridColor } },
-        y: { ticks: { color: labelColor, callback: v => v + '%' }, grid: { color: gridColor } }
-      }
-    }
-  });
-
-  // 2. Radar chart: 多因子得分
-  charts.radar = new Chart(document.getElementById('chart-radar'), {
-    type: 'radar',
-    data: {
-      labels: ['动量', '均值回归', '波动率', '资金流', '微观结构', '市场状态'],
-      datasets: [{
-        label: '通信ETF',
-        data: [0,0,0,0,0,0],
-        borderColor: '#4a6cf5', backgroundColor: 'rgba(74,108,245,0.15)',
-        pointBackgroundColor: '#4a6cf5',
-      }]
-    },
-    options: {
-      ...defaultOpts,
-      scales: {
-        r: {
-          min: 0, max: 100,
-          ticks: { color: labelColor, backdropColor: 'transparent', stepSize: 20, font: { size: 9 } },
-          grid: { color: gridColor }, pointLabels: { color: '#c0c8e0', font: { size: 10 } },
-          angleLines: { color: gridColor },
-        }
-      }
-    }
-  });
-
-  // 3. Doughnut: FOMC概率
-  charts.fomc = new Chart(document.getElementById('chart-fomc'), {
-    type: 'doughnut',
-    data: {
-      labels: ['鸽派', '中性', '鹰派'],
-      datasets: [{
-        data: [40, 35, 25],
-        backgroundColor: ['#00e676', '#ffc400', '#ff4d6a'],
-        borderWidth: 0,
-        hoverOffset: 8,
-      }]
-    },
-    options: {
-      ...defaultOpts,
-      cutout: '60%',
-      plugins: {
-        legend: { position: 'bottom', labels: { color: labelColor, font: { size: 10 }, padding: 8 } }
-      }
-    }
-  });
-
-  // 4. Horizontal bar: 因子IC
-  charts.ic = new Chart(document.getElementById('chart-ic'), {
-    type: 'bar',
-    data: {
-      labels: ['动量(35%)', '均值回归(15%)', '波动率(10%)', '资金流(25%)', '微观结构(10%)', '市场状态(5%)'],
-      datasets: [{
-        label: 'IC贡献度',
-        data: [32, 12, 8, 28, 18, 5],
-        backgroundColor: ['#4a6cf5','#00d4ff','#a855f7','#00e676','#ffc400','#ff4d6a'],
-        borderRadius: 4,
-      }]
-    },
-    options: {
-      ...defaultOpts, indexAxis: 'y',
-      scales: {
-        x: { ticks: { color: labelColor }, grid: { color: gridColor } },
-        y: { ticks: { color: labelColor, font: { size: 10 } }, grid: { display: false } }
-      }
-    }
-  });
-
-  // 5. Line: 波动率趋势
-  charts.vol = new Chart(document.getElementById('chart-vol'), {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [
-        { label: '上证', data: [], borderColor: '#ff4d6a', borderWidth: 2, pointRadius: 2, tension: 0.3 },
-        { label: '创业板', data: [], borderColor: '#4a6cf5', borderWidth: 2, pointRadius: 2, tension: 0.3 },
-        { label: '科创50', data: [], borderColor: '#00d4ff', borderWidth: 2, pointRadius: 2, tension: 0.3 },
-      ]
-    },
-    options: {
-      ...defaultOpts,
-      scales: {
-        x: { ticks: { color: labelColor, font: { size: 9 } }, grid: { color: gridColor } },
-        y: { ticks: { color: labelColor, callback: v => v.toFixed(2) }, grid: { color: gridColor } }
-      }
-    }
-  });
-
-  // 6. Doughnut: 资金流向
-  charts.flow = new Chart(document.getElementById('chart-flow'), {
-    type: 'doughnut',
-    data: {
-      labels: ['通信ETF', '科创50', '半导体', '机器人', '新能源', '创新药'],
-      datasets: [{
-        data: [30, 25, 20, 10, 10, 5],
-        backgroundColor: ['#4a6cf5','#00d4ff','#a855f7','#00e676','#ffc400','#ff4d6a'],
-        borderWidth: 0,
-      }]
-    },
-    options: {
-      ...defaultOpts, cutout: '55%',
-      plugins: { legend: { position: 'bottom', labels: { color: labelColor, font: { size: 9 }, padding: 6 } } }
-    }
-  });
-
-  // 7. Line: 因子趋势（近7日）
-  charts.trend = new Chart(document.getElementById('chart-trend'), {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [
-        { label: '动量因子', data: [], borderColor: '#4a6cf5', borderWidth: 2, pointRadius: 3, tension: 0.4 },
-        { label: '资金流因子', data: [], borderColor: '#00e676', borderWidth: 2, pointRadius: 3, tension: 0.4 },
-        { label: '微观结构', data: [], borderColor: '#a855f7', borderWidth: 2, pointRadius: 3, tension: 0.4 },
-        { label: '均值回归', data: [], borderColor: '#ffc400', borderWidth: 2, pointRadius: 3, tension: 0.4 },
-      ]
-    },
-    options: {
-      ...defaultOpts,
-      scales: {
-        x: { ticks: { color: labelColor }, grid: { color: gridColor } },
-        y: { ticks: { color: labelColor }, grid: { color: gridColor } }
-      },
-      interaction: { mode: 'index', intersect: false },
-    }
-  });
+// ── 状态栏 ──
+function renderStatus() {
+  document.getElementById('status-bar').innerHTML = `
+    <div class="status-item"><span class="status-dot live"></span> <strong>实时</strong> 数据同步中</div>
+    <div class="status-item">📅 <span id="st-date">--</span></div>
+    <div class="status-item">📊 ETF: <strong id="st-etf">62</strong> 只</div>
+    <div class="status-item">🎯 准确率: <strong style="color:var(--down)" id="st-acc">--</strong></div>
+  `;
 }
 
-// ── Agent拓扑SVG ──
-function drawTopology(agents) {
-  const svg = document.getElementById('topo-svg');
-  const cx = 300, cy = 80;
-  const positions = {
-    '指挥官': [cx, cy],
-    '大A': [100, 30], '老美': [100, 130], '军机处': [500, 30], '量化1哥': [500, 130],
-    '包青天': [300, 145],
-  };
-  const colors = { '🟢': '#00e676', '🟡': '#ffc400', '🔴': '#ff4d6a' };
-  const agentData = agents || {};
-
-  let html = '';
-  // 画连线
-  const lines = [
-    ['指挥官','大A'],['指挥官','老美'],['指挥官','军机处'],
-    ['指挥官','量化1哥'],['指挥官','包青天'],
-    ['大A','量化1哥'],['老美','量化1哥'],['军机处','量化1哥'],
+// ── KPI卡片 ──
+function renderKPI(data) {
+  const grid = document.getElementById('kpi-row');
+  const items = [
+    {icon:'🎯',value:data.accuracy||'--',label:'方向准确率',sub:'历史最佳',color:data.accColor||'var(--down)'},
+    {icon:'📉',value:data.avgError||'--',label:'平均误差',sub:data.errorSub||'持续改善',color:'var(--orange)'},
+    {icon:'⭐',value:data.best||'--',label:'今日最准',sub:'预测最接近',color:'var(--cyan)'},
+    {icon:'⚠️',value:data.worst||'--',label:'最大偏差',sub:'需要优化',color:'var(--up)'}
   ];
-  lines.forEach(([a, b]) => {
-    const [x1, y1] = positions[a]; const [x2, y2] = positions[b];
-    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1e264a" stroke-width="1.5"/>`;
-  });
-  // 画节点
-  Object.entries(positions).forEach(([name, [x, y]]) => {
-    const state = agentData[name] || '🟡 待命';
-    const col = state.includes('在线') ? colors['🟢'] : state.includes('待命') ? colors['🟡'] : colors['🔴'];
-    const r = name === '指挥官' ? 18 : 12;
-    html += `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="0.3" stroke="${col}" stroke-width="2"/>`;
-    html += `<text x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="middle"
-      fill="${col}" font-size="${name==='指挥官'?10:8}" font-weight="bold">${name}</text>`;
-  });
-  svg.innerHTML = html;
+  grid.innerHTML = items.map((it,i)=>`
+    <div class="kpi-card fade-in" style="animation-delay:${i*0.08}s">
+      <div class="kpi-icon">${it.icon}</div>
+      <div class="kpi-value" style="color:${it.color}" id="kpi-${i}">${it.value}</div>
+      <div class="kpi-label">${it.label}</div>
+      <div class="kpi-change" style="color:${it.color}">${it.sub}</div>
+      <div class="kpi-bar" style="width:${60+i*15}%;background:${it.color};"></div>
+    </div>
+  `).join('');
 }
 
-// ── 渲染主函数 ──
-function render(data) {
-  if (!data) return;
-
-  // 大盘指数
-  const idxEl = document.getElementById('indices');
-  idxEl.innerHTML = '';
-  for (const [name, v] of Object.entries(data.indices || {})) {
-    const cls = v.chg_pct > 0 ? 'up' : v.chg_pct < 0 ? 'down' : 'flat';
-    const sign = v.chg_pct > 0 ? '+' : '';
-    idxEl.innerHTML += `<div class="idx-row">
-      <span class="name">${name}</span>
-      <span class="price">${v.price.toFixed(2)}</span>
-      <span class="chg ${cls}">${sign}${v.chg_pct.toFixed(2)}%</span>
+// ── 预测卡片网格 ──
+function renderPredictCards(data) {
+  if(!data||!data.rankings) return;
+  document.getElementById('pred-date-badge').textContent = data.date || '--';
+  
+  const container = document.getElementById('predict-cards');
+  container.innerHTML = data.rankings.map((r,i)=>{
+    const pct = r.calibrated_prediction || r.chg_pct || 0;
+    const cls = pct >= 0 ? 'var(--up)' : 'var(--down)';
+    const conf = r.confidence || '中';
+    const confW = conf==='高'?'80%':conf==='中'?'55%':'30%';
+    const confC = conf==='高'?'var(--down)':conf==='中'?'var(--orange)':'var(--up)';
+    return `<div class="rank-item fade-in" style="animation-delay:${i*0.06}s">
+      <div class="rank-num">${i+1}</div>
+      <div class="etf-name">${r.name}</div>
+      <div class="etf-code">${r.code||''} · <span style="color:${confC}">${conf}置信</span></div>
+      <div class="predict-pct" style="color:${cls}">${pct>=0?'+':''}${pct.toFixed(2)}%</div>
+      <div class="confidence-bar" style="width:${confW};background:linear-gradient(90deg,${confC},var(--down))"></div>
+      <div class="reason">${r.reason||''}</div>
     </div>`;
-  }
+  }).join('');
+}
 
-  // ETF排名
-  const etfList = Object.entries(data.etfs || {})
-    .map(([code, v]) => ({code, ...v}))
-    .sort((a, b) => (b.score_b || 0) - (a.score_b || 0));
-  const etfEl = document.getElementById('etf-rank');
-  etfEl.innerHTML = '';
-  etfList.forEach((v, i) => {
-    const cls = v.chg_pct > 0 ? 'up' : v.chg_pct < 0 ? 'down' : 'flat';
-    const sign = v.chg_pct > 0 ? '+' : '';
-    etfEl.innerHTML += `<div class="idx-row">
-      <span class="rank">#${i+1}</span>
-      <span class="name">${v.name}</span>
-      <span class="price">${v.price.toFixed(3)}</span>
-      <span class="chg ${cls}">${sign}${v.chg_pct.toFixed(2)}%</span>
-    </div>`;
+// ── 复盘对比 ──
+function renderRecap(data, acc) {
+  document.getElementById('recap-date-badge').textContent = acc && acc.length>0 ? acc[acc.length-1].date : '--';
+  renderKPI({
+    accuracy: acc && acc.length>0 ? ((acc[acc.length-1].accuracy||acc[acc.length-1].direction_accuracy||0)*100).toFixed(0)+'%' : '--',
+    avgError: acc && acc.length>0 && acc[acc.length-1].avg_error ? (acc[acc.length-1].avg_error*100).toFixed(1)+'%' : '--',
+    best: acc && acc.length>0 ? acc[acc.length-1].best_prediction||'--' : '--',
+    worst: acc && acc.length>0 ? acc[acc.length-1].worst_prediction||'--' : '--',
+    accColor: acc && acc.length>0 && acc[acc.length-1].accuracy>=0.8 ? 'var(--down)' : 'var(--orange)',
+    errorSub: acc && acc.length>0 && acc[acc.length-1].avg_error<0.03 ? '高精度' : '持续改善'
   });
-
-  // Bar chart
-  const labels = etfList.map(v => v.name);
-  const chgs = etfList.map(v => v.chg_pct);
-  const barColors = chgs.map(v => v > 0 ? '#ff4d6a' : v < 0 ? '#00e676' : '#6b7b99');
-  charts.bar.data.labels = labels;
-  charts.bar.data.datasets[0].data = chgs;
-  charts.bar.data.datasets[0].backgroundColor = barColors;
-  charts.bar.update('none');
-
-  // Radar chart (top ETF)
-  if (etfList.length > 0) {
-    const top = etfList[0];
-    const scores = [
-      top.factor_mom || 0, top.factor_mr || 0, top.factor_vol || 0,
-      top.factor_flow || 0, top.factor_ms || 0, top.factor_regime || 0
-    ];
-    charts.radar.data.datasets[0].label = top.name;
-    charts.radar.data.datasets[0].data = scores;
-    charts.radar.update('none');
-  }
-
-  // FOMC doughnut
-  const fp = data.factors?.fomc_prob || {dove:40,neutral:35,hawk:25};
-  charts.fomc.data.datasets[0].data = [fp.dove, fp.neutral, fp.hawk];
-  charts.fomc.update('none');
-
-  // 因子IC
-  const icData = [
-    {name:'动量',w:35,val:32}, {name:'均值回归',w:15,val:12},
-    {name:'波动率',w:10,val:8}, {name:'资金流',w:25,val:28},
-    {name:'微观结构',w:10,val:18}, {name:'市场状态',w:5,val:5}
-  ];
-  charts.ic.data.labels = icData.map(d => `${d.name}(${d.w}%)`);
-  charts.ic.data.datasets[0].data = icData.map(d => d.val);
-  charts.ic.update('none');
-
-  // 波动率趋势（近7日）
-  const volLabels = ['6/9','6/10','6/11','6/12','6/13','6/15','6/16'];
-  const volSSE = [1.8, 2.1, 1.9, 1.7, 2.3, 3.5, 2.8];
-  const volChi = [2.2, 2.5, 2.8, 2.1, 2.6, 4.2, 3.5];
-  const volSTAR = [2.0, 2.3, 2.5, 1.9, 2.4, 4.0, 3.2];
-  charts.vol.data.labels = volLabels;
-  charts.vol.data.datasets[0].data = volSSE;
-  charts.vol.data.datasets[1].data = volChi;
-  charts.vol.data.datasets[2].data = volSTAR;
-  charts.vol.update('none');
-
-  // 资金流向
-  const flowLabels = etfList.map(v => v.name);
-  const flowData = etfList.map((_, i) => Math.max(5, 40 - i * 6));
-  charts.flow.data.labels = flowLabels;
-  charts.flow.data.datasets[0].data = flowData;
-  charts.flow.update('none');
-
-  // 因子趋势（近7日）
-  const trendLabels = volLabels;
-  charts.trend.data.labels = trendLabels;
-  charts.trend.data.datasets[0].data = [45, 52, 55, 48, 60, 78, 85];
-  charts.trend.data.datasets[1].data = [30, 35, 38, 32, 40, 55, 62];
-  charts.trend.data.datasets[2].data = [20, 22, 25, 18, 28, 42, 48];
-  charts.trend.data.datasets[3].data = [35, 30, 28, 32, 25, 18, 15];
-  charts.trend.update('none');
-
-  // 因子状态
-  const facEl = document.getElementById('factors');
-  facEl.innerHTML = '';
-  const f = data.factors || {};
-  const tags = [
-    {l:'L0流动性', v:f.L0_liquidity||'--'},
-    {l:'市场状态', v:f.market_regime||'--'},
-    {l:'调仓事件', v:(f.L4b_events||[]).length>0?'⚠️ 有':'✅ 无'},
-  ];
-  tags.forEach(t => {
-    facEl.innerHTML += `<div class="tag"><div class="lbl">${t.l}</div><div class="val">${t.v}</div></div>`;
-  });
-
-  // Agent拓扑
-  drawTopology(data.agent_status);
-
-  // 操作建议
-  const adEl = document.getElementById('advice');
-  const adv = [];
-  const topEtf = etfList[0];
-  if (topEtf && topEtf.chg_pct > 3) adv.push(`⚠️ ${topEtf.name} 涨幅+${topEtf.chg_pct.toFixed(2)}%，注意回调`);
-  if (fp.hawk >= 30) adv.push(`🔴 FOMC鹰派概率${fp.hawk}%，科技ETF减至5成`);
-  else adv.push(`🟢 FOMC鸽派概率${fp.dove}%，可持仓`);
-  if ((f.L4b_events||[]).length) adv.push(`📅 有指数调仓事件，相关ETF提前布局`);
-  adEl.innerHTML = adv.map(a => `<div class="item">${a}</div>`).join('');
-
-  // 全量数据表
-  const tbl = document.getElementById('etf-table');
-  tbl.innerHTML = '<tr><th>#</th><th>代码</th><th>名称</th><th>实时价</th><th>涨跌%</th><th>Track B</th><th>动量</th><th>均值回归</th><th>资金流</th><th>微观结构</th></tr>';
-  etfList.forEach((v, i) => {
-    const cls = v.chg_pct > 0 ? 'up' : 'down';
-    const sign = v.chg_pct > 0 ? '+' : '';
-    tbl.innerHTML += `<tr>
-      <td style="color:var(--blue)">${i+1}</td>
-      <td style="color:var(--blue)">${v.code}</td>
-      <td>${v.name}</td>
-      <td style="font-family:monospace">${v.price.toFixed(3)}</td>
-      <td class="${cls}">${sign}${v.chg_pct.toFixed(2)}%</td>
-      <td style="color:#7b9cff">${v.score_b!=null?v.score_b.toFixed(1):'--'}</td>
-      <td>${v.factor_mom||'--'}</td>
-      <td>${v.factor_mr||'--'}</td>
-      <td>${v.factor_flow||'--'}</td>
-      <td>${v.factor_ms||'--'}</td>
+  
+  const div = document.getElementById('recap-comparison');
+  if(!data||!data.rankings) { div.innerHTML='<div style="color:var(--text-dim)">暂无数据</div>'; return; }
+  let html = '<table class="data-table"><tr><th>ETF</th><th>预测</th><th>实际</th><th>误差</th><th>方向</th></tr>';
+  data.rankings.forEach(r=>{
+    const pred = r.calibrated_prediction||r.chg_pct||0;
+    const act = r.actual_change;
+    const err = act!=null ? Math.abs(pred-act).toFixed(2) : '-';
+    const dir = act!=null ? ((pred>=0&&act>=0)||(pred<0&&act<0)?'✅':'❌') : '-';
+    html += `<tr>
+      <td style="font-weight:600">${r.name}</td>
+      <td class="${pred>=0?'up':'down'}">${pred>=0?'+':''}${pred.toFixed(2)}%</td>
+      <td class="${act!=null&&act>=0?'up':'down'}">${act!=null?(act>=0?'+':'')+act.toFixed(2)+'%':'-'}</td>
+      <td>${err!=='-'?err+'%':'-'}</td>
+      <td>${dir}</td>
     </tr>`;
   });
-  document.getElementById('tbl-upd').textContent = '更新于 ' + new Date(data.updated_at).toLocaleTimeString('zh-CN');
+  div.innerHTML = html + '</table>';
 }
 
-// ── 数据获取 ──
-async function fetchData() {
-  try {
-    const r = await fetch('/api/data?t=' + Date.now());
-    if (r.ok) { const d = await r.json(); render(d); }
-    document.getElementById('dot-c').className = 'dot ok';
-    document.getElementById('conn').textContent = '已连接';
-  } catch(e) {
-    document.getElementById('dot-c').className = 'dot err';
-    document.getElementById('conn').textContent = '断开';
-  }
-}
-
-function tickClock() {
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('zh-CN', {hour12: false});
-}
-
-// ── 加载自选ETF数据 ──
-async function loadWatchlist() {
-  try {
-    const r = await fetch('/api/etf/watchlist?t=' + Date.now());
-    if (r.ok) {
-      const data = await r.json();
-      renderWatchlistTable('watchlist-a-share', data.a_share || []);
-      renderWatchlistTable('watchlist-us', data.us || []);
+// ── 准确率图表 ──
+var chart;
+function renderAccuracyChart(acc) {
+  if(!acc||acc.length===0) return;
+  if(chart) chart.destroy();
+  chart = new Chart(document.getElementById('accuracy-chart'),{
+    type:'line',
+    data:{
+      labels:acc.map(a=>a.date),
+      datasets:[{
+        label:'方向准确率', data:acc.map(a=>(a.accuracy||a.direction_accuracy||0)*100),
+        borderColor:'#4a6cf5', backgroundColor:'rgba(74,108,245,0.08)',
+        fill:true, tension:0.4, pointRadius:5, pointBackgroundColor:'#4a6cf5',
+        borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#6b7b99'},grid:{color:'#1e2a4a'}},
+        y:{min:0,max:100,ticks:{color:'#6b7b99',callback:v=>v+'%'},grid:{color:'#1e2a4a'}}
+      }
     }
-  } catch(e) {
-    console.error('加载自选失败:', e);
-  }
-}
-
-function renderWatchlistTable(tableId, etfs) {
-  const tbl = document.getElementById(tableId);
-  tbl.innerHTML = '<tr><th>#</th><th>代码</th><th>名称</th><th>最新价</th><th>涨跌幅</th></tr>';
-  etfs.forEach((etf, i) => {
-    const cls = etf.change_pct >= 0 ? 'up' : 'down';
-    const sign = etf.change_pct >= 0 ? '+' : '';
-    tbl.innerHTML += `<tr>
-      <td style="color:var(--blue)">${i+1}</td>
-      <td style="color:var(--blue)">${etf.code}</td>
-      <td>${etf.name}</td>
-      <td style="font-family:monospace">${etf.price.toFixed(3)}</td>
-      <td class="${cls}">${sign}${etf.change_pct.toFixed(2)}%</td>
-    </tr>`;
   });
 }
 
-// ── 加载ETF排名数据 ──
-async function loadRankings() {
+// ── ETF表格 ──
+async function loadETFTable() {
   try {
-    const r = await fetch('/api/etf/rankings?market=all&sort=change_pct&top=10&t=' + Date.now());
-    if (r.ok) {
-      const data = await r.json();
-      renderRankingsTable(data);
-    }
-  } catch(e) {
-    console.error('加载排名失败:', e);
-  }
-}
-
-function renderRankingsTable(etfs) {
-  const tbl = document.getElementById('etf-rankings');
-  tbl.innerHTML = '<tr><th>#</th><th>代码</th><th>名称</th><th>最新价</th><th>涨跌幅</th><th>成交量</th><th>成交额</th><th>换手率</th></tr>';
-  etfs.forEach((etf, i) => {
-    const cls = etf.change_pct >= 0 ? 'up' : 'down';
-    const sign = etf.change_pct >= 0 ? '+' : '';
-    tbl.innerHTML += `<tr>
-      <td style="color:var(--blue)">${i+1}</td>
-      <td style="color:var(--blue)">${etf.code}</td>
-      <td>${etf.name}</td>
-      <td style="font-family:monospace">${etf.price.toFixed(3)}</td>
-      <td class="${cls}">${sign}${etf.change_pct.toFixed(2)}%</td>
-      <td>${(etf.volume / 10000).toFixed(0)}万</td>
-      <td>${(etf.amount / 100000000).toFixed(2)}亿</td>
-      <td>${etf.turnover_rate.toFixed(2)}%</td>
-    </tr>`;
-  });
-}
-
-// ── 启动 ──
-initCharts();
-tickClock();
-setInterval(tickClock, 1000);
-fetchData();
-loadWatchlist();
-loadRankings();
-loadPredictions();
-setInterval(fetchData, 15000);
-setInterval(loadWatchlist, 30000);
-setInterval(loadRankings, 30000);
-setInterval(loadPredictions, 60000);
-
-// ── 加载预测数据 ──
-async function loadPredictions() {
-  try {
-    const [latestRes, historyRes, accuracyRes] = await Promise.all([
-      fetch('/api/predictions/latest?t=' + Date.now()),
-      fetch('/api/predictions/history?t=' + Date.now()),
-      fetch('/api/accuracy/history?t=' + Date.now())
-    ]);
-    
-    const latest = await latestRes.json();
-    const history = await historyRes.json();
-    const accuracy = await accuracyRes.json();
-    
-    renderRecap(latest, history, accuracy);
-    renderLatestPrediction(latest);
-    renderSellSignals(latest);
-    renderAccuracyTrend(accuracy);
-  } catch(e) {
-    console.error('加载预测数据失败:', e);
-  }
-}
-
-function renderRecap(latest, history, accuracy) {
-  // 从accuracy_history取最新一天的复盘数据
-  if (!accuracy || accuracy.length === 0) return;
-  const latestAcc = accuracy[accuracy.length - 1];
-  
-  document.getElementById('recap-date').textContent = latestAcc.date || '-';
-  document.getElementById('recap-direction-acc').textContent = 
-    latestAcc.direction_accuracy !== undefined ? (latestAcc.direction_accuracy * 100).toFixed(0) + '%' : 
-    latestAcc.accuracy !== undefined ? (latestAcc.accuracy * 100).toFixed(0) + '%' : '-';
-  document.getElementById('recap-avg-error').textContent = 
-    latestAcc.avg_error !== undefined ? (latestAcc.avg_error * 100).toFixed(1) + '%' : '-';
-  document.getElementById('recap-best').textContent = latestAcc.best_prediction || '-';
-  document.getElementById('recap-worst').textContent = latestAcc.worst_prediction || '-';
-  
-  // 预测vs实际对比表
-  const tbl = document.getElementById('recap-comparison');
-  tbl.innerHTML = '<tr><th>ETF</th><th>预测</th><th>实际</th><th>误差</th><th>方向</th></tr>';
-  
-  if (latest && latest.rankings) {
-    latest.rankings.forEach(r => {
-      const pred = r.calibrated_prediction || r.chg_pct || 0;
-      const actual = r.actual_change || null;
-      const err = actual !== null ? Math.abs(pred - actual).toFixed(2) : '-';
-      const dir = actual !== null ? 
-        ((pred >= 0 && actual >= 0) || (pred < 0 && actual < 0) ? '✅' : '❌') : '-';
-      const cls = pred >= 0 ? 'up' : 'down';
-      
+    const r = await api('/api/etf/rankings?top=10&sort=change_pct');
+    const tbl = document.getElementById('etf-table');
+    tbl.innerHTML = '<tr><th>#</th><th>代码</th><th>名称</th><th>最新价</th><th>涨跌幅</th><th>成交额</th><th>换手率</th></tr>';
+    r.forEach((e,i)=>{
+      const cls = e.change_pct >= 0 ? 'up' : 'down';
       tbl.innerHTML += `<tr>
-        <td>${r.name}</td>
-        <td class="${cls}">${pred >= 0 ? '+' : ''}${pred.toFixed(2)}%</td>
-        <td class="${actual >= 0 ? 'up' : 'down'}">${actual !== null ? (actual >= 0 ? '+' : '') + actual.toFixed(2) + '%' : '-'}</td>
-        <td>${err !== '-' ? err + '%' : '-'}</td>
-        <td>${dir}</td>
+        <td style="color:var(--blue);font-weight:700">${i+1}</td>
+        <td style="color:var(--blue);font-family:monospace">${e.code}</td>
+        <td>${e.name}</td>
+        <td style="font-family:monospace">${(e.price||0).toFixed(3)}</td>
+        <td class="${cls}">${cls==='up'?'+':''}${(e.change_pct||0).toFixed(2)}%</td>
+        <td>${((e.amount||0)/1e8).toFixed(2)}亿</td>
+        <td>${(e.turnover_rate||0).toFixed(2)}%</td>
       </tr>`;
     });
-  }
+  } catch(e) {}
 }
 
-function renderLatestPrediction(data) {
-  if (!data || !data.rankings) return;
+// ── 风险列表 ──
+function renderRisks(data) {
+  const rDiv = document.getElementById('risk-list');
+  const sDiv = document.getElementById('sell-list');
+  rDiv.innerHTML = '<h3 style="color:var(--text-dim);font-size:0.85rem;margin-bottom:8px;">🔴 风险因素</h3>';
+  sDiv.innerHTML = '<h3 style="color:var(--text-dim);font-size:0.85rem;margin-bottom:8px;">🔻 看空信号</h3>';
   
-  document.getElementById('pred-date').textContent = data.date || '-';
-  
-  const tbl = document.getElementById('latest-prediction');
-  tbl.innerHTML = '<tr><th>#</th><th>ETF</th><th>预测涨跌</th><th>置信度</th><th>理由</th></tr>';
-  
-  data.rankings.forEach((item, i) => {
-    const pred = item.calibrated_prediction || item.chg_pct || 0;
-    const cls = pred >= 0 ? 'up' : 'down';
-    const sign = pred >= 0 ? '+' : '';
-    const confidence = item.confidence || '中';
-    const confColor = confidence === '高' ? 'var(--down)' : confidence === '中' ? 'var(--orange)' : 'var(--up)';
-    
-    tbl.innerHTML += `<tr>
-      <td style="color:var(--blue);font-weight:bold">${i+1}</td>
-      <td>${item.name}</td>
-      <td class="${cls}">${sign}${pred.toFixed(2)}%</td>
-      <td style="color:${confColor}">${confidence}</td>
-      <td style="font-size:0.75rem;color:#6b7b99">${item.reason || '-'}</td>
-    </tr>`;
-  });
-}
-
-function renderSellSignals(data) {
-  if (!data) return;
-  
-  const tbl = document.getElementById('sell-signals');
-  tbl.innerHTML = '<tr><th>ETF</th><th>预测涨跌</th><th>风险提示</th></tr>';
-  
-  if (data.sell_signals && data.sell_signals.length > 0) {
-    data.sell_signals.forEach(item => {
-      tbl.innerHTML += `<tr>
-        <td>${item.name}</td>
-        <td class="down">${item.prediction}%</td>
-        <td style="font-size:0.75rem;color:#6b7b99">${item.reason}</td>
-      </tr>`;
+  if(data&&data.risk_warnings){
+    data.risk_warnings.forEach(r=>{
+      rDiv.innerHTML += `<div class="risk-bar risk-mid">${r}</div>`;
     });
   } else {
-    tbl.innerHTML += '<tr><td colspan="3" style="color:#6b7b99;text-align:center">暂无卖出信号</td></tr>';
+    rDiv.innerHTML += '<div class="risk-bar risk-low">暂无风险提示</div>';
   }
   
-  // 风险提示
-  const riskDiv = document.getElementById('risk-warnings');
-  if (data.risk_warnings && data.risk_warnings.length > 0) {
-    riskDiv.innerHTML = data.risk_warnings.map(r => 
-      `<div style="padding:4px 0;color:var(--orange);">⚠️ ${r}</div>`
-    ).join('');
+  if(data&&data.sell_signals&&data.sell_signals.length>0){
+    data.sell_signals.forEach(s=>{
+      sDiv.innerHTML += `<div class="rank-item" style="margin-bottom:8px;">
+        <div class="etf-name">${s.name}</div>
+        <div class="predict-pct" style="color:var(--down)">${(s.prediction||0)<0?'':'+'}${(s.prediction||0).toFixed(2)}%</div>
+        <div class="reason">${s.reason||''}</div>
+      </div>`;
+    });
   } else {
-    riskDiv.innerHTML = '<div style="color:#6b7b99;">暂无风险提示</div>';
+    sDiv.innerHTML += '<div style="color:var(--text-dim)">暂无看空信号</div>';
   }
 }
 
-function renderAccuracyTrend(accuracy) {
-  if (!accuracy || accuracy.length === 0) return;
+// ── 主加载 ──
+async function loadAll() {
+  try {
+    const [predRes, accRes] = await Promise.all([api('/api/predictions/latest'), api('/api/accuracy/history')]);
+    renderPredictCards(predRes);
+    renderRecap(predRes, accRes);
+    renderAccuracyChart(accRes);
+    renderRisks(predRes);
+    renderStatus();
+    document.getElementById('st-acc').textContent = accRes.length>0 ? ((accRes[accRes.length-1].accuracy||0)*100).toFixed(0)+'%' : '--';
+  } catch(e) { console.error(e); }
   
-  const labels = accuracy.map(a => a.date);
-  const accData = accuracy.map(a => (a.accuracy || a.direction_accuracy || 0) * 100);
-  
-  if (window.accuracyTrendChart) window.accuracyTrendChart.destroy();
-  
-  window.accuracyTrendChart = new Chart(document.getElementById('chart-accuracy-trend'), {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: '方向准确率(%)',
-        data: accData,
-        borderColor: '#4a6cf5',
-        backgroundColor: 'rgba(74,108,245,0.1)',
-        fill: true,
-        tension: 0.3,
-        pointBackgroundColor: '#4a6cf5',
-        pointRadius: 5
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#6b7b99', font: { size: 10 } }, grid: { color: '#1e264a' } },
-        y: { min: 0, max: 100, ticks: { color: '#6b7b99', callback: v => v + '%' }, grid: { color: '#1e264a' } }
-      }
-    }
-  });
+  loadETFTable();
 }
 
+renderStatus();
+loadAll();
+setInterval(loadAll, 60000);
+})();
 </script>
 </body>
 </html>
