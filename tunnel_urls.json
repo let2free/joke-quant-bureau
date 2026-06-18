@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-06-18T20:50:01+08:00",
+  "updated_at": "2026-06-18T21:25:02+08:00",
   "services": {
     "yiphysics": {
       "name": "YiPhysics 元物理引擎 + 龙虾信箱",
-      "url": "https://goals-validation-helmet-badly.trycloudflare.com",
-      "exchange": "https://goals-validation-helmet-badly.trycloudflare.com/exchange/health",
+      "url": "https://parties-gives-snowboard-actions.trycloudflare.com",
+      "exchange": "https://parties-gives-snowboard-actions.trycloudflare.com/exchange/health",
       "port": 8080
     },
     "dashboard": {
       "name": "九章量化局看板",
-      "url": "https://poultry-explicitly-improvement-gzip.trycloudflare.com",
+      "url": "",
       "port": 7860
     }
   },
