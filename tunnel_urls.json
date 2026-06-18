@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-06-18T21:25:02+08:00",
+  "updated_at": "2026-06-18T22:05:01+08:00",
   "services": {
     "yiphysics": {
       "name": "YiPhysics 元物理引擎 + 龙虾信箱",
-      "url": "https://parties-gives-snowboard-actions.trycloudflare.com",
-      "exchange": "https://parties-gives-snowboard-actions.trycloudflare.com/exchange/health",
+      "url": "https://press-jet-bill-adds.trycloudflare.com",
+      "exchange": "https://press-jet-bill-adds.trycloudflare.com/exchange/health",
       "port": 8080
     },
     "dashboard": {
       "name": "九章量化局看板",
-      "url": "",
+      "url": "https://thread-sharp-expenditures-few.trycloudflare.com",
       "port": 7860
     }
   },
